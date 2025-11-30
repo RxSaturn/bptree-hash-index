@@ -251,9 +251,11 @@ def generate_simple_data(config: ExperimentConfig, filename: str):
         if not made_progress:
             if deletions_remaining > 0 and not keys_inserted:
                 # Can't delete if nothing is inserted
+                print(f"⚠️  Ajustando: {deletions_remaining} deleções não podem ser realizadas (sem chaves inseridas)")
                 deletions_remaining = 0
             else:
-                # Should not happen, but break to prevent infinite loop
+                # Should not happen, log warning and break to prevent infinite loop
+                print(f"⚠️  Condição inesperada: insert={insertions_remaining}, search={searches_remaining}, delete={deletions_remaining}")
                 break
     
     # Ensure output directory exists

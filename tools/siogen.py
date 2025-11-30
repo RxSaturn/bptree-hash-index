@@ -12,6 +12,7 @@ Uso:
 
 import argparse
 import csv
+import os
 import sys
 from random import randint, shuffle, seed
 
@@ -99,7 +100,6 @@ def store_records(rec_list, par_dict):
     att_list = ['OP'] + ['A' + str(number + 1) for number in range(par_dict[ATT])]
     
     # Ensure output directory exists
-    import os
     output_dir = os.path.dirname(par_dict[FILE])
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)

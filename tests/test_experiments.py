@@ -42,9 +42,10 @@ class TestLoadSiogenData:
         assert operations[1] == ('?', [1, 1])
         assert operations[2] == ('-', [1, 1])
     
-    def test_load_nonexistent_file(self):
+    def test_load_nonexistent_file(self, tmp_path):
         """Testa carregamento de arquivo inexistente."""
-        operations = load_siogen_data('/tmp/nonexistent_file_xyz.csv')
+        nonexistent_file = tmp_path / "nonexistent_file.csv"
+        operations = load_siogen_data(str(nonexistent_file))
         
         assert operations == []
     
