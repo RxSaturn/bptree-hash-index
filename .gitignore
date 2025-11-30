@@ -25,7 +25,7 @@ wheels/
 *.egg
 
 # PyInstaller
-*. manifest
+*.manifest
 *.spec
 
 # Installer logs
@@ -46,7 +46,7 @@ coverage.xml
 
 # Translations
 *.mo
-*. pot
+*.pot
 
 # Django stuff:
 *.log
@@ -66,7 +66,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-. ipynb_checkpoints
+.ipynb_checkpoints
 
 # pyenv
 .python-version
@@ -78,13 +78,13 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-. env
+.env
 .venv
 env/
 venv/
 ENV/
 env.bak/
-venv. bak/
+venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -110,7 +110,7 @@ venv. bak/
 Thumbs.db
 
 # Project specific
-data/*. csv
+data/*.csv
 results/*.csv
 results/*.png
 results/*.pdf
@@ -120,5 +120,5 @@ artigo/*.out
 artigo/*.synctex.gz
 artigo/*.bbl
 artigo/*.blg
-artigo/*. fdb_latexmk
+artigo/*.fdb_latexmk
 artigo/*.fls
