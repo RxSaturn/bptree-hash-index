@@ -57,6 +57,9 @@ def load_siogen_data(filename: str) -> List[Tuple[str, List[int]]]:
         
     Returns:
         Lista de (operação, campos)
+        
+    Raises:
+        ValueError: Se o arquivo estiver vazio ou corrompido
     """
     operations = []
     
@@ -64,17 +67,46 @@ def load_siogen_data(filename: str) -> List[Tuple[str, List[int]]]:
         print(f"⚠️  Arquivo não encontrado: {filename}")
         return operations
     
-    with open(filename, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            op = row['OP']
-            # Extrai campos (exceto OP)
-            fields = []
-            i = 1
-            while f'A{i}' in row:
-                fields.append(int(row[f'A{i}']))
-                i += 1
-            operations.append((op, fields))
+    # Check if file is empty
+    if os.path.getsize(filename) == 0:
+        print(f"⚠️  Arquivo vazio: {filename}")
+        return operations
+    
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            
+            # Validate header
+            if reader.fieldnames is None or 'OP' not in reader.fieldnames:
+                print(f"⚠️  Arquivo com formato inválido (cabeçalho ausente ou sem coluna OP): {filename}")
+                return operations
+            
+            for row in reader:
+                op = row.get('OP')
+                if op not in ('+', '-', '?'):
+                    print(f"⚠️  Operação inválida ignorada: {op}")
+                    continue
+                    
+                # Extrai campos (exceto OP)
+                fields = []
+                i = 1
+                while f'A{i}' in row:
+                    try:
+                        fields.append(int(row[f'A{i}']))
+                    except (ValueError, TypeError):
+                        print(f"⚠️  Valor inválido para campo A{i}, usando 0")
+                        fields.append(0)
+                    i += 1
+                operations.append((op, fields))
+    except csv.Error as e:
+        print(f"⚠️  Erro ao ler arquivo CSV: {e}")
+        return []
+    except Exception as e:
+        print(f"⚠️  Erro inesperado ao carregar dados: {e}")
+        return []
+    
+    if not operations:
+        print(f"⚠️  Nenhuma operação válida encontrada em: {filename}")
     
     return operations
 
@@ -104,6 +136,8 @@ def generate_siogen_data(config: ExperimentConfig, output_dir: str) -> str:
         'tools', 'siogen.py'
     )
     
+    use_fallback = False
+    
     if os.path.exists(siogen_path):
         cmd = [
             sys.executable, siogen_path,
@@ -116,13 +150,36 @@ def generate_siogen_data(config: ExperimentConfig, output_dir: str) -> str:
         ]
         
         try:
-            subprocess.run(cmd, check=True, capture_output=True)
-            print(f"✅ Dados gerados: {filename}")
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            
+            # Verify file was created and is not empty
+            if not os.path.exists(filename):
+                print(f"❌ Arquivo não foi criado: {filename}")
+                if result.stderr:
+                    print(f"   stderr: {result.stderr}")
+                use_fallback = True
+            elif os.path.getsize(filename) == 0:
+                print(f"❌ Arquivo gerado está vazio: {filename}")
+                use_fallback = True
+            else:
+                print(f"✅ Dados gerados: {filename}")
+                
         except subprocess.CalledProcessError as e:
             print(f"❌ Erro ao gerar dados: {e}")
+            if e.stderr:
+                print(f"   stderr: {e.stderr}")
+            if e.stdout:
+                print(f"   stdout: {e.stdout}")
+            use_fallback = True
+        except Exception as e:
+            print(f"❌ Erro inesperado ao executar SIOgen: {e}")
+            use_fallback = True
     else:
         print(f"⚠️  SIOgen não encontrado em: {siogen_path}")
-        # Gera dados simples manualmente
+        use_fallback = True
+    
+    if use_fallback:
+        print("⚠️  Usando gerador de dados alternativo (fallback)")
         generate_simple_data(config, filename)
     
     return filename
@@ -131,6 +188,9 @@ def generate_siogen_data(config: ExperimentConfig, output_dir: str) -> str:
 def generate_simple_data(config: ExperimentConfig, filename: str):
     """
     Gera dados simples sem SIOgen (fallback).
+    
+    Intercala operações (inserções → buscas → deleções em ciclos)
+    para simular o comportamento do SIOgen original.
     """
     import random
     random.seed(config.seed)
@@ -138,23 +198,68 @@ def generate_simple_data(config: ExperimentConfig, filename: str):
     operations = []
     keys = list(range(config.num_insertions))
     random.shuffle(keys)
+    keys_remaining = keys.copy()
+    keys_inserted = set()
     
-    # Gera inserções
-    for key in keys:
-        fields = [key] + [random.randint(0, 1000) for _ in range(config.num_fields - 1)]
-        operations.append(('+', fields))
+    insertions_remaining = config.num_insertions
+    searches_remaining = config.num_searches
+    # Ensure deletions don't exceed insertions
+    deletions_remaining = min(config.num_deletions, config.num_insertions)
     
-    # Gera buscas
-    for _ in range(config.num_searches):
-        key = random.randint(0, config.num_insertions * 2)
-        fields = [key] * config.num_fields
-        operations.append(('?', fields))
+    # Intercala operações em ciclos como SIOgen
+    while insertions_remaining + searches_remaining + deletions_remaining > 0:
+        made_progress = False
+        
+        # Gera algumas inserções
+        if insertions_remaining > 0 and keys_remaining:
+            ins_count = random.randint(1, min(insertions_remaining, len(keys_remaining)))
+            for _ in range(ins_count):
+                key = keys_remaining.pop(0)
+                fields = [key] + [random.randint(0, 1000) for _ in range(config.num_fields - 1)]
+                operations.append(('+', fields))
+                keys_inserted.add(key)
+                insertions_remaining -= 1
+            made_progress = True
+        
+        # Gera algumas buscas
+        if searches_remaining > 0:
+            search_count = random.randint(1, searches_remaining)
+            for _ in range(search_count):
+                # Busca em intervalo que inclui chaves inseridas e não inseridas
+                if keys_inserted:
+                    key = random.randint(0, 2 * len(keys_inserted))
+                else:
+                    key = random.randint(0, 100)
+                fields = [key] * config.num_fields
+                operations.append(('?', fields))
+                searches_remaining -= 1
+            made_progress = True
+        
+        # Gera algumas deleções
+        if deletions_remaining > 0 and keys_inserted:
+            del_count = random.randint(1, min(deletions_remaining, len(keys_inserted)))
+            keys_to_delete = random.sample(list(keys_inserted), del_count)
+            for key in keys_to_delete:
+                fields = [key] * config.num_fields
+                operations.append(('-', fields))
+                keys_inserted.remove(key)
+                deletions_remaining -= 1
+            made_progress = True
+        
+        # Safety check: if we couldn't make progress but there are still operations remaining,
+        # skip impossible operations
+        if not made_progress:
+            if deletions_remaining > 0 and not keys_inserted:
+                # Can't delete if nothing is inserted
+                deletions_remaining = 0
+            else:
+                # Should not happen, but break to prevent infinite loop
+                break
     
-    # Gera deleções
-    delete_keys = random.sample(keys, min(config.num_deletions, len(keys)))
-    for key in delete_keys:
-        fields = [key] * config.num_fields
-        operations.append(('-', fields))
+    # Ensure output directory exists
+    output_dir = os.path.dirname(filename)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     
     # Salva arquivo
     with open(filename, 'w', newline='', encoding='utf-8') as f:

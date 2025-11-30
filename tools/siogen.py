@@ -12,6 +12,7 @@ Uso:
 
 import argparse
 import csv
+import sys
 from random import randint, shuffle, seed
 
 # Parameters
@@ -97,6 +98,12 @@ def store_records(rec_list, par_dict):
     
     att_list = ['OP'] + ['A' + str(number + 1) for number in range(par_dict[ATT])]
     
+    # Ensure output directory exists
+    import os
+    output_dir = os.path.dirname(par_dict[FILE])
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+    
     with open(par_dict[FILE], 'w', encoding='utf-8', newline='') as out_file:
         out_write = csv.DictWriter(out_file, att_list)
         out_write.writeheader()
@@ -157,7 +164,25 @@ def get_arguments(print_help=False):
 def main():
     '''Main routine'''
     args = get_arguments()
-    seed(args. seed)
+    
+    # Parameter validation
+    if args.attributes < 1:
+        print("❌ Erro: Número de atributos deve ser >= 1", file=sys.stderr)
+        sys.exit(1)
+    if args.insertions < 0:
+        print("❌ Erro: Número de inserções deve ser >= 0", file=sys.stderr)
+        sys.exit(1)
+    if args.deletions < 0:
+        print("❌ Erro: Número de deleções deve ser >= 0", file=sys.stderr)
+        sys.exit(1)
+    if args.searches < 0:
+        print("❌ Erro: Número de buscas deve ser >= 0", file=sys.stderr)
+        sys.exit(1)
+    if args.deletions > args.insertions:
+        print("❌ Erro: Número de deleções não pode ser maior que inserções", file=sys.stderr)
+        sys.exit(1)
+    
+    seed(args.seed)
     
     par_dict = {
         ATT: args.attributes,
@@ -167,8 +192,12 @@ def main():
         FILE: args.filename
     }
     
-    gen_data(par_dict)
-    print(f"✅ Dados gerados em: {args.filename}")
+    try:
+        gen_data(par_dict)
+        print(f"✅ Dados gerados em: {args.filename}")
+    except Exception as e:
+        print(f"❌ Erro ao gerar dados: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
