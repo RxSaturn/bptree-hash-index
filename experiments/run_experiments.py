@@ -18,11 +18,11 @@ from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 
 # Adiciona diretório raiz ao path
-sys.path.insert(0, os.path.dirname(os. path.dirname(os.path. abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src. bplustree. tree import BPlusTree
-from src. hash.extendible import ExtendibleHash
-from src.common. record import Record
+from src.bplustree.tree import BPlusTree
+from src.hash.extendible import ExtendibleHash
+from src.common.record import Record
 
 
 @dataclass
@@ -60,7 +60,7 @@ def load_siogen_data(filename: str) -> List[Tuple[str, List[int]]]:
     """
     operations = []
     
-    if not os.path. exists(filename):
+    if not os.path.exists(filename):
         print(f"⚠️  Arquivo não encontrado: {filename}")
         return operations
     
@@ -74,7 +74,7 @@ def load_siogen_data(filename: str) -> List[Tuple[str, List[int]]]:
             while f'A{i}' in row:
                 fields.append(int(row[f'A{i}']))
                 i += 1
-            operations. append((op, fields))
+            operations.append((op, fields))
     
     return operations
 
@@ -94,22 +94,22 @@ def generate_siogen_data(config: ExperimentConfig, output_dir: str) -> str:
     
     os.makedirs(output_dir, exist_ok=True)
     
-    filename = os.path. join(
+    filename = os.path.join(
         output_dir,
-        f"data_{config.name}_{config.num_fields}f_{config.page_size}p. csv"
+        f"data_{config.name}_{config.num_fields}f_{config.page_size}p.csv"
     )
     
-    siogen_path = os.path. join(
-        os.path. dirname(os.path.dirname(os. path.abspath(__file__))),
-        'tools', 'siogen. py'
+    siogen_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'tools', 'siogen.py'
     )
     
     if os.path.exists(siogen_path):
         cmd = [
             sys.executable, siogen_path,
-            '-a', str(config. num_fields),
-            '-i', str(config. num_insertions),
-            '-d', str(config. num_deletions),
+            '-a', str(config.num_fields),
+            '-i', str(config.num_insertions),
+            '-d', str(config.num_deletions),
             '-s', str(config.num_searches),
             '-f', filename,
             '-e', str(config.seed)
@@ -133,7 +133,7 @@ def generate_simple_data(config: ExperimentConfig, filename: str):
     Gera dados simples sem SIOgen (fallback).
     """
     import random
-    random.seed(config. seed)
+    random.seed(config.seed)
     
     operations = []
     keys = list(range(config.num_insertions))
@@ -142,13 +142,13 @@ def generate_simple_data(config: ExperimentConfig, filename: str):
     # Gera inserções
     for key in keys:
         fields = [key] + [random.randint(0, 1000) for _ in range(config.num_fields - 1)]
-        operations. append(('+', fields))
+        operations.append(('+', fields))
     
     # Gera buscas
-    for _ in range(config. num_searches):
-        key = random. randint(0, config.num_insertions * 2)
+    for _ in range(config.num_searches):
+        key = random.randint(0, config.num_insertions * 2)
         fields = [key] * config.num_fields
-        operations.append(('? ', fields))
+        operations.append(('?', fields))
     
     # Gera deleções
     delete_keys = random.sample(keys, min(config.num_deletions, len(keys)))
@@ -158,8 +158,8 @@ def generate_simple_data(config: ExperimentConfig, filename: str):
     
     # Salva arquivo
     with open(filename, 'w', newline='', encoding='utf-8') as f:
-        fieldnames = ['OP'] + [f'A{i+1}' for i in range(config. num_fields)]
-        writer = csv. DictWriter(f, fieldnames=fieldnames)
+        fieldnames = ['OP'] + [f'A{i+1}' for i in range(config.num_fields)]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         
         for op, fields in operations:
@@ -179,7 +179,7 @@ def run_bplus_experiment(
     Executa experimento com B+ Tree. 
     """
     tree = BPlusTree(
-        page_size=config. page_size,
+        page_size=config.page_size,
         num_fields=config.num_fields
     )
     
@@ -193,7 +193,7 @@ def run_bplus_experiment(
     start = time.perf_counter()
     for key, record in insert_ops:
         tree.insert(key, record)
-    insert_time = time. perf_counter() - start
+    insert_time = time.perf_counter() - start
     insert_stats = tree.get_stats()
     
     # Buscas
@@ -241,7 +241,7 @@ def run_hash_experiment(
     Executa experimento com Hash Extensível. 
     """
     hash_idx = ExtendibleHash(
-        page_size=config. page_size,
+        page_size=config.page_size,
         num_fields=config.num_fields
     )
     
@@ -254,13 +254,13 @@ def run_hash_experiment(
     hash_idx.reset_stats()
     start = time.perf_counter()
     for key, record in insert_ops:
-        hash_idx. insert(key, record)
+        hash_idx.insert(key, record)
     insert_time = time.perf_counter() - start
     insert_stats = hash_idx.get_stats()
     
     # Buscas
-    hash_idx. reset_stats()
-    start = time. perf_counter()
+    hash_idx.reset_stats()
+    start = time.perf_counter()
     found_count = 0
     for key in search_ops:
         if hash_idx.search(key):
@@ -305,13 +305,13 @@ def print_result(result: ExperimentResult):
     print(f"⏱️  Busca:    {result.search_time:.4f}s")
     print(f"⏱️  Remoção:  {result.delete_time:.4f}s")
     print(f"📈 Estatísticas de Inserção: {result.stats['insert']}")
-    print(f"🔍 Buscas encontradas: {result. stats['search']. get('found', 'N/A')}")
+    print(f"🔍 Buscas encontradas: {result.stats['search'].get('found', 'N/A')}")
 
 
 def save_results(results: List[ExperimentResult], output_dir: str):
     """Salva resultados em CSV."""
-    os. makedirs(output_dir, exist_ok=True)
-    filename = os.path. join(output_dir, 'experiment_results.csv')
+    os.makedirs(output_dir, exist_ok=True)
+    filename = os.path.join(output_dir, 'experiment_results.csv')
     
     with open(filename, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -324,24 +324,24 @@ def save_results(results: List[ExperimentResult], output_dir: str):
         ])
         
         for r in results:
-            insert_stats = r.stats. get('insert', {})
+            insert_stats = r.stats.get('insert', {})
             search_stats = r.stats.get('search', {})
-            delete_stats = r. stats.get('delete', {})
+            delete_stats = r.stats.get('delete', {})
             
-            page_ops = insert_stats.get('page_writes', 0) + insert_stats. get('bucket_writes', 0)
+            page_ops = insert_stats.get('page_writes', 0) + insert_stats.get('bucket_writes', 0)
             splits = insert_stats.get('splits', 0)
             
             writer.writerow([
                 r.config.name,
                 r.index_type,
-                r. config.num_fields,
-                r. config.page_size,
-                r. config.num_insertions,
+                r.config.num_fields,
+                r.config.page_size,
+                r.config.num_insertions,
                 r.config.num_searches,
                 r.config.num_deletions,
                 f"{r.insert_time:.6f}",
-                f"{r.search_time:. 6f}",
-                f"{r. delete_time:.6f}",
+                f"{r.search_time:.6f}",
+                f"{r.delete_time:.6f}",
                 page_ops,
                 splits,
                 search_stats.get('found', 0),
@@ -385,17 +385,17 @@ def main():
     ]
     
     # Diretórios
-    base_dir = os.path.dirname(os.path. dirname(os.path. abspath(__file__)))
-    data_dir = os. path.join(base_dir, 'data')
-    results_dir = os. path.join(base_dir, 'results')
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(base_dir, 'data')
+    results_dir = os.path.join(base_dir, 'results')
     
     results = []
     
     for config in configs:
         print(f"\n{'=' * 70}")
-        print(f"📋 Experimento: {config. name}")
+        print(f"📋 Experimento: {config.name}")
         print(f"   Campos: {config.num_fields}, Página: {config.page_size} bytes")
-        print(f"   Inserções: {config. num_insertions}, Buscas: {config.num_searches}, Deleções: {config. num_deletions}")
+        print(f"   Inserções: {config.num_insertions}, Buscas: {config.num_searches}, Deleções: {config.num_deletions}")
         print("=" * 70)
         
         # Gera dados
@@ -417,7 +417,7 @@ def main():
         
         hash_result = run_hash_experiment(config, data)
         print_result(hash_result)
-        results. append(hash_result)
+        results.append(hash_result)
     
     # Salva resultados
     save_results(results, results_dir)

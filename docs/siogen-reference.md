@@ -23,7 +23,7 @@ python siogen.py [opções]
 ## Formato de Saída
 
 O arquivo CSV gerado contém:
-- Coluna `OP`: Operação (`+` inserção, `-` deleção, `? ` busca)
+- Coluna `OP`: Operação (`+` inserção, `-` deleção, `?` busca)
 - Colunas `A1` a `An`: Valores dos atributos (inteiros 0-1000)
 - `A1` é sempre a chave primária
 
@@ -34,10 +34,10 @@ O arquivo CSV gerado contém:
 python siogen.py -a 10 -i 5000 -d 500 -s 3000 -f exp1.csv
 
 # Muitos campos
-python siogen. py -a 50 -i 10000 -d 1000 -s 5000 -f exp2.csv
+python siogen.py -a 50 -i 10000 -d 1000 -s 5000 -f exp2.csv
 
 # Volume alto
-python siogen. py -a 10 -i 50000 -d 5000 -s 20000 -f exp3.csv
+python siogen.py -a 10 -i 50000 -d 5000 -s 20000 -f exp3.csv
 ```
 
 ## Processamento no Python
@@ -61,10 +61,10 @@ data = load_siogen_data('output.csv')
 for op, fields in data:
     key = fields[0]  # A1 é a chave
     if op == '+':
-        index. insert(key, Record(fields))
+        index.insert(key, Record(fields))
     elif op == '-':
         index.delete(key)
-    elif op == '? ':
+    elif op == '?':
         result = index.search(key)
 ```
 
