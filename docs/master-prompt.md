@@ -164,7 +164,7 @@ class Record:
     def deserialize(cls, data: bytes, num_fields: int) -> 'Record':
         """Deserializa bytes para um registro."""
         import struct
-        fields = list(struct. unpack(f'{num_fields}i', data))
+        fields = list(struct.unpack(f'{num_fields}i', data))
         return cls(fields=fields)
     
     @property
@@ -200,7 +200,7 @@ class Node(ABC):
     def is_underflow(self) -> bool:
         """Verifica se o nó tem menos que o mínimo de chaves."""
         min_keys = (self.order + 1) // 2 - 1
-        return len(self. keys) < min_keys
+        return len(self.keys) < min_keys
     
     @abstractmethod
     def split(self) -> tuple:
@@ -219,7 +219,7 @@ class LeafNode(Node):
     def __init__(self, order: int):
         super().__init__(order)
         self.records: List[Record] = []
-        self. next: Optional['LeafNode'] = None  # Para range queries
+        self.next: Optional['LeafNode'] = None  # Para range queries
         self.prev: Optional['LeafNode'] = None  # Opcional: navegação bidirecional
     
     @property
@@ -241,17 +241,17 @@ class LeafNode(Node):
         pos = self._find_position(key)
         
         # Verifica duplicata
-        if pos < len(self. keys) and self. keys[pos] == key:
+        if pos < len(self.keys) and self.keys[pos] == key:
             return False  # Chave duplicada
         
         # Insere na posição correta
-        self.keys. insert(pos, key)
-        self. records.insert(pos, record)
+        self.keys.insert(pos, key)
+        self.records.insert(pos, record)
         return True
     
     def _find_position(self, key: int) -> int:
         """Busca binária para encontrar posição de inserção."""
-        left, right = 0, len(self. keys)
+        left, right = 0, len(self.keys)
         while left < right:
             mid = (left + right) // 2
             if self.keys[mid] < key:
@@ -282,22 +282,22 @@ class LeafNode(Node):
         Returns:
             Tuple (novo_nó, chave_promovida)
         """
-        mid = len(self. keys) // 2
+        mid = len(self.keys) // 2
         
         # Cria novo nó com metade superior
         new_node = LeafNode(self.order)
-        new_node. keys = self.keys[mid:]
+        new_node.keys = self.keys[mid:]
         new_node.records = self.records[mid:]
         
         # Mantém metade inferior
         self.keys = self.keys[:mid]
-        self. records = self.records[:mid]
+        self.records = self.records[:mid]
         
         # Atualiza ponteiros de lista encadeada
         new_node.next = self.next
         new_node.prev = self
         if self.next:
-            self.next. prev = new_node
+            self.next.prev = new_node
         self.next = new_node
         
         # Promove primeira chave do novo nó
@@ -345,7 +345,7 @@ class InternalNode(Node):
         Returns:
             Nó filho apropriado
         """
-        for i, k in enumerate(self. keys):
+        for i, k in enumerate(self.keys):
             if key < k:
                 return self.children[i]
         return self.children[-1]
@@ -359,11 +359,11 @@ class InternalNode(Node):
             child: Novo nó filho
         """
         pos = 0
-        while pos < len(self. keys) and self.keys[pos] < key:
+        while pos < len(self.keys) and self.keys[pos] < key:
             pos += 1
         
-        self.keys. insert(pos, key)
-        self. children.insert(pos + 1, child)
+        self.keys.insert(pos, key)
+        self.children.insert(pos + 1, child)
         child.parent = self
     
     def split(self) -> tuple['InternalNode', int]:
@@ -374,7 +374,7 @@ class InternalNode(Node):
             Tuple (novo_nó, chave_promovida)
         """
         mid = len(self.keys) // 2
-        promoted_key = self. keys[mid]
+        promoted_key = self.keys[mid]
         
         # Cria novo nó com metade superior
         new_node = InternalNode(self.order)
@@ -387,7 +387,7 @@ class InternalNode(Node):
         
         # Mantém metade inferior
         self.keys = self.keys[:mid]
-        self. children = self.children[:mid + 1]
+        self.children = self.children[:mid + 1]
         
         return new_node, promoted_key
 ```
@@ -395,7 +395,7 @@ class InternalNode(Node):
 ```python
 # src/bplustree/tree.py
 from typing import List, Optional, Tuple
-from . node import Node, LeafNode, InternalNode, Record
+from .node import Node, LeafNode, InternalNode, Record
 
 class BPlusTree:
     """
@@ -424,14 +424,14 @@ class BPlusTree:
         # Calcula ordem baseada no tamanho da página
         # Para garantir mínimo 3 chaves: page_size >= 256 bytes
         self.page_size = page_size
-        self. num_fields = num_fields
+        self.num_fields = num_fields
         self.order = self._calculate_order(page_size, num_fields) if order is None else order
         
         # Inicializa com nó folha vazio
-        self. root: Node = LeafNode(self.order)
+        self.root: Node = LeafNode(self.order)
         
         # Métricas para experimentos
-        self. stats = {
+        self.stats = {
             'page_reads': 0,
             'page_writes': 0,
             'splits': 0,
@@ -472,7 +472,7 @@ class BPlusTree:
         """
         # Encontra nó folha apropriado
         leaf = self._find_leaf(key)
-        self. stats['page_reads'] += 1
+        self.stats['page_reads'] += 1
         
         # Tenta inserir no nó folha
         if not leaf.insert(key, record):
@@ -503,7 +503,7 @@ class BPlusTree:
         
         # Se folha era raiz, cria nova raiz
         if leaf.parent is None:
-            new_root = InternalNode(self. order)
+            new_root = InternalNode(self.order)
             new_root.keys = [promoted_key]
             new_root. children = [leaf, new_leaf]
             leaf.parent = new_root
@@ -523,7 +523,7 @@ class BPlusTree:
         self.stats['splits'] += 1
         
         new_node, promoted_key = node.split()
-        self. stats['page_writes'] += 2
+        self.stats['page_writes'] += 2
         
         if node.parent is None:
             # Cria nova raiz
@@ -664,7 +664,7 @@ classDiagram
 # src/hash/bucket.py
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
-from .. common. record import Record
+from ..common.record import Record
 
 @dataclass
 class Bucket:
@@ -730,11 +730,11 @@ class Bucket:
         """
         new_depth = self.local_depth + 1
         bucket0 = Bucket(local_depth=new_depth, capacity=self.capacity)
-        bucket1 = Bucket(local_depth=new_depth, capacity=self. capacity)
+        bucket1 = Bucket(local_depth=new_depth, capacity=self.capacity)
         
         # Redistribui registros baseado no novo bit
         mask = 1 << (new_depth - 1)
-        for key, record in self. records:
+        for key, record in self.records:
             if key & mask:
                 bucket1.records.append((key, record))
             else:
@@ -747,7 +747,7 @@ class Bucket:
 # src/hash/extendible. py
 from typing import Optional, List
 from .bucket import Bucket
-from .. common.record import Record
+from ..common.record import Record
 
 class ExtendibleHash:
     """
@@ -773,7 +773,7 @@ class ExtendibleHash:
             record_size = num_fields * 4 + 4  # campos + chave
             bucket_capacity = max(2, page_size // record_size)
         
-        self. global_depth = 1
+        self.global_depth = 1
         self.bucket_capacity = bucket_capacity
         
         # Inicializa com 2 buckets (2^1)
@@ -832,9 +832,9 @@ class ExtendibleHash:
     def _handle_overflow(self, key: int, record: Record) -> None:
         """Trata overflow de bucket."""
         index = self._hash(key)
-        bucket = self. directory[index]
+        bucket = self.directory[index]
         
-        if bucket.local_depth < self. global_depth:
+        if bucket.local_depth < self.global_depth:
             # Split apenas o bucket
             self._split_bucket(index)
         else:
@@ -848,7 +848,7 @@ class ExtendibleHash:
             # Recursão se ainda cheio (muito improvável)
             self._handle_overflow(key, record)
         else:
-            self. stats['bucket_writes'] += 1
+            self.stats['bucket_writes'] += 1
     
     def _double_directory(self) -> None:
         """Dobra o tamanho do diretório."""
@@ -867,7 +867,7 @@ class ExtendibleHash:
         """Divide um bucket."""
         self.stats['splits'] += 1
         
-        old_bucket = self. directory[index]
+        old_bucket = self.directory[index]
         bucket0, bucket1 = old_bucket.split()
         
         self.stats['bucket_writes'] += 2
@@ -928,7 +928,7 @@ class ExtendibleHash:
     
     def get_stats(self) -> dict:
         """Retorna estatísticas para experimentos."""
-        stats = self.stats. copy()
+        stats = self.stats.copy()
         stats['global_depth'] = self.global_depth
         stats['num_buckets'] = len(set(id(b) for b in self.directory))
         stats['directory_size'] = len(self.directory)
@@ -937,7 +937,7 @@ class ExtendibleHash:
     def reset_stats(self) -> None:
         """Reseta estatísticas."""
         for key in ['bucket_reads', 'bucket_writes', 'splits', 'directory_doublings']:
-            self. stats[key] = 0
+            self.stats[key] = 0
 ```
 
 ---
@@ -954,10 +954,10 @@ import sys
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
 
-sys.path.append('. .')
-from src. bplustree.tree import BPlusTree
+sys.path.append('..')
+from src.bplustree.tree import BPlusTree
 from src.hash.extendible import ExtendibleHash
-from src.common. record import Record
+from src.common.record import Record
 
 @dataclass
 class ExperimentConfig:
@@ -984,7 +984,7 @@ def load_siogen_data(filename: str) -> List[Tuple[str, List[int]]]:
     Carrega dados gerados pelo SIOgen. 
     
     Returns:
-        Lista de (operação, campos) onde operação é '+', '-', ou '? '
+        Lista de (operação, campos) onde operação é '+', '-', ou '?'
     """
     operations = []
     with open(filename, 'r') as f:
@@ -1011,7 +1011,7 @@ def run_bplus_experiment(config: ExperimentConfig, data: List[Tuple[str, List[in
     start = time.perf_counter()
     for key, record in insert_ops:
         tree.insert(key, record)
-    insert_time = time. perf_counter() - start
+    insert_time = time.perf_counter() - start
     insert_stats = tree.get_stats()
     
     # Buscas
@@ -1059,7 +1059,7 @@ def run_hash_experiment(config: ExperimentConfig, data: List[Tuple[str, List[int
     start = time.perf_counter()
     for key, record in insert_ops:
         hash_index.insert(key, record)
-    insert_time = time. perf_counter() - start
+    insert_time = time.perf_counter() - start
     insert_stats = hash_index.get_stats()
     
     # Buscas
@@ -1233,7 +1233,7 @@ removed = tree.delete(key=1)
 
 ```python
 from src.hash.extendible import ExtendibleHash
-from src.common. record import Record
+from src.common.record import Record
 
 # Cria hash com página de 512 bytes
 hash_index = ExtendibleHash(page_size=512, num_fields=10)
@@ -1431,10 +1431,10 @@ data = load_siogen_data('output.csv')
 for op, fields in data:
     key = fields[0]  # A1 é a chave
     if op == '+':
-        index. insert(key, Record(fields))
+        index.insert(key, Record(fields))
     elif op == '-':
         index.delete(key)
-    elif op == '? ':
+    elif op == '?':
         result = index.search(key)
 ```
 

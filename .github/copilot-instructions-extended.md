@@ -135,7 +135,7 @@ config = {
 
 ### Uso do SIOgen
 ```bash
-python siogen.py -a 10 -i 5000 -d 500 -s 3000 -f data. csv
+python siogen.py -a 10 -i 5000 -d 500 -s 3000 -f data.csv
 # -a: atributos, -i: inserções, -d: deleções, -s: buscas
 ```
 
@@ -173,4 +173,4 @@ Estrutura esperada (iftex2024):
 - Documentar cada decisão de design
 - Medir e reportar métricas
 
-Consulte `master-prompt-bptree-hash. md` para metodologia completa. 
+Consulte `master-prompt-bptree-hash.md` para metodologia completa. 
