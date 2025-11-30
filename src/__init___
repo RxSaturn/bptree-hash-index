@@ -7,4 +7,4 @@ Este pacote contém implementações de estruturas de índice para banco de dado
 """
 
 __version__ = "1.0.0"
-__author__ = "Seu Nome"
+__author__ = "Henrique Augusto, Rayssa Mendes, Henrique Evangelista"
