@@ -14,7 +14,7 @@ setup(
     description="Implementação de índices B+ Tree e Hash Extensível em Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github. com/RxSaturn/bptree-hash-index",
+    url="https://github.com/RxSaturn/bptree-hash-index",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
