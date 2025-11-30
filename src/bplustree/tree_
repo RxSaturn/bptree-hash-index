@@ -1,0 +1,296 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Módulo Principal da Árvore B+
+
+Implementa a classe BPlusTree que gerencia toda a estrutura da árvore,
+incluindo operações de inserção, busca, busca por intervalo e remoção. 
+"""
+
+from typing import List, Optional, Dict, Any
+from .node import Node, LeafNode, InternalNode
+from .. common.record import Record
+from ..common.config import Config
+
+
+class BPlusTree:
+    """
+    Implementação de Árvore B+ para indexação. 
+    
+    A árvore B+ é uma estrutura de dados balanceada otimizada para
+    operações em disco. Todas as chaves e registros são armazenados
+    nos nós folha, que são encadeados para permitir busca por intervalo.
+    
+    Attributes:
+        order: Ordem da árvore (máximo de chaves por nó)
+        root: Nó raiz da árvore
+        config: Configuração da árvore
+        stats: Estatísticas de operações
+        
+    Example:
+        >>> tree = BPlusTree(page_size=512, num_fields=10)
+        >>> tree.insert(1, Record([1, 100, 200]))
+        True
+        >>> tree. search(1)
+        Record(key=1, fields=[1, 100, 200])
+        >>> tree.range_search(1, 100)
+        [Record(... ), ...]
+    """
+    
+    def __init__(
+        self,
+        order: Optional[int] = None,
+        page_size: int = 512,
+        num_fields: int = 10
+    ):
+        """
+        Inicializa a árvore B+.
+        
+        Args:
+            order: Ordem da árvore (se None, calculado automaticamente)
+            page_size: Tamanho da página em bytes (mínimo 256)
+            num_fields: Número de campos por registro
+            
+        Raises:
+            ValueError: Se page_size < 256
+        """
+        # Configuração
+        self.config = Config(page_size=page_size, num_fields=num_fields)
+        
+        # Calcula ordem se não fornecida
+        if order is None:
+            self. order = self.config.calculate_bplus_order()
+        else:
+            self.order = max(3, order)
+        
+        # Inicializa com nó folha vazio como raiz
+        self.root: Node = LeafNode(self.order)
+        
+        # Estatísticas para experimentos
+        self. stats: Dict[str, int] = {
+            'page_reads': 0,
+            'page_writes': 0,
+            'splits': 0,
+            'merges': 0,
+            'height': 1
+        }
+    
+    def insert(self, key: int, record: Record) -> bool:
+        """
+        Insere um registro na árvore. 
+        
+        Args:
+            key: Chave do registro
+            record: Registro a inserir
+            
+        Returns:
+            True se inserido com sucesso, False se chave duplicada
+            
+        Complexity:
+            Time: O(log n) para encontrar + O(log n) para splits
+            Space: O(1) auxiliar
+        """
+        # Encontra nó folha apropriado
+        leaf = self._find_leaf(key)
+        self. stats['page_reads'] += 1
+        
+        # Tenta inserir no nó folha
+        if not leaf.insert(key, record):
+            return False  # Chave duplicada
+        
+        self.stats['page_writes'] += 1
+        
+        # Se nó folha estiver cheio, faz split
+        if leaf.is_full():
+            self._handle_split(leaf)
+        
+        return True
+    
+    def _find_leaf(self, key: int) -> LeafNode:
+        """
+        Navega até o nó folha apropriado para a chave.
+        
+        Args:
+            key: Chave de busca
+            
+        Returns:
+            Nó folha onde a chave deveria estar
+        """
+        node = self.root
+        while not node.is_leaf:
+            self. stats['page_reads'] += 1
+            node = node.find_child(key)
+        return node
+    
+    def _handle_split(self, node: Node) -> None:
+        """
+        Trata split de um nó e propaga para cima se necessário.
+        
+        Args:
+            node: Nó que precisa de split
+        """
+        self.stats['splits'] += 1
+        
+        new_node, promoted_key = node.split()
+        self.stats['page_writes'] += 2
+        
+        if node.parent is None:
+            # Nó era a raiz - cria nova raiz
+            self._create_new_root(node, new_node, promoted_key)
+        else:
+            # Insere no pai
+            node.parent.insert_child(promoted_key, new_node)
+            
+            # Se pai estiver cheio, propaga split
+            if node.parent.is_full():
+                self._handle_split(node. parent)
+    
+    def _create_new_root(
+        self,
+        left_child: Node,
+        right_child: Node,
+        key: int
+    ) -> None:
+        """
+        Cria uma nova raiz após split da raiz atual.
+        
+        Args:
+            left_child: Filho esquerdo (nó original)
+            right_child: Filho direito (novo nó do split)
+            key: Chave promovida
+        """
+        new_root = InternalNode(self. order)
+        new_root.keys = [key]
+        new_root.children = [left_child, right_child]
+        left_child.parent = new_root
+        right_child.parent = new_root
+        self.root = new_root
+        self.stats['page_writes'] += 1
+        self.stats['height'] += 1
+    
+    def search(self, key: int) -> Optional[Record]:
+        """
+        Busca um registro pela chave (busca por igualdade). 
+        
+        Args:
+            key: Chave a buscar
+            
+        Returns:
+            Record se encontrado, None caso contrário
+            
+        Complexity:
+            Time: O(log n)
+            Space: O(1)
+        """
+        leaf = self._find_leaf(key)
+        self.stats['page_reads'] += 1
+        return leaf.search(key)
+    
+    def range_search(self, start_key: int, end_key: int) -> List[Record]:
+        """
+        Busca por intervalo [start_key, end_key]. 
+        
+        Utiliza o encadeamento dos nós folha para percorrer
+        eficientemente todos os registros no intervalo.
+        
+        Args:
+            start_key: Limite inferior (inclusivo)
+            end_key: Limite superior (inclusivo)
+            
+        Returns:
+            Lista de registros no intervalo
+            
+        Complexity:
+            Time: O(log n + k) onde k é número de resultados
+            Space: O(k)
+        """
+        if start_key > end_key:
+            return []
+        
+        results: List[Record] = []
+        
+        # Encontra primeiro nó folha
+        leaf = self._find_leaf(start_key)
+        self.stats['page_reads'] += 1
+        
+        # Percorre nós folha usando encadeamento
+        while leaf is not None:
+            for i, key in enumerate(leaf. keys):
+                if key > end_key:
+                    return results
+                if start_key <= key <= end_key:
+                    results.append(leaf.records[i])
+            
+            leaf = leaf.next
+            if leaf is not None:
+                self.stats['page_reads'] += 1
+        
+        return results
+    
+    def delete(self, key: int) -> Optional[Record]:
+        """
+        Remove um registro pela chave. 
+        
+        Args:
+            key: Chave a remover
+            
+        Returns:
+            Record removido ou None se não encontrado
+            
+        Note:
+            Esta implementação simplificada não realiza merge/redistribute
+            em caso de underflow. Para produção, implementar handling completo.
+        """
+        leaf = self._find_leaf(key)
+        self.stats['page_reads'] += 1
+        
+        record = leaf.delete(key)
+        
+        if record:
+            self.stats['page_writes'] += 1
+            # TODO: Implementar merge/redistribute para underflow
+            # if leaf.is_underflow() and not leaf.is_root():
+            #     self._handle_underflow(leaf)
+        
+        return record
+    
+    def get_stats(self) -> Dict[str, int]:
+        """
+        Retorna estatísticas de operações.
+        
+        Returns:
+            Dicionário com contadores de operações
+        """
+        return self. stats. copy()
+    
+    def reset_stats(self) -> None:
+        """Reseta todos os contadores de estatísticas."""
+        for key in self.stats:
+            if key != 'height':
+                self.stats[key] = 0
+    
+    def get_height(self) -> int:
+        """Retorna a altura atual da árvore."""
+        return self. stats['height']
+    
+    def get_info(self) -> Dict[str, Any]:
+        """
+        Retorna informações gerais sobre a árvore.
+        
+        Returns:
+            Dicionário com informações da estrutura
+        """
+        return {
+            'order': self. order,
+            'height': self.stats['height'],
+            'page_size': self. config.page_size,
+            'num_fields': self. config.num_fields,
+            'stats': self.get_stats()
+        }
+    
+    def __repr__(self) -> str:
+        """Representação string da árvore."""
+        return (
+            f"BPlusTree(order={self.order}, height={self.stats['height']}, "
+            f"page_size={self.config.page_size})"
+        )

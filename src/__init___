@@ -1,0 +1,10 @@
+"""
+B+ Tree e Hash Extensível - Índices de Banco de Dados
+
+Este pacote contém implementações de estruturas de índice para banco de dados:
+- B+ Tree: Árvore balanceada para busca por igualdade e intervalo
+- Hash Extensível: Tabela hash dinâmica para busca por igualdade
+"""
+
+__version__ = "1.0.0"
+__author__ = "Seu Nome"
