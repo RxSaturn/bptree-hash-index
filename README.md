@@ -153,7 +153,7 @@ python siogen.py -a 10 -i 5000 -s 3000 -d 500 -f ../data/experiment1.csv
 
 ```bash
 cd experiments
-python run_experiments. py
+python run_experiments.py
 ```
 
 ### Configurações testadas
