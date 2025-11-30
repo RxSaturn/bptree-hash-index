@@ -189,15 +189,6 @@ bptree-hash-index/
 - [Referência SIOgen](docs/siogen-reference.md) - Como usar o gerador de dados
 - [Arquitetura](docs/architecture.md) - Decisões de design
 
-## 🎓 Critérios de Avaliação
-
-| Critério | Peso |
-|----------|------|
-| Organização do código | 15% |
-| Funcionamento correto | 35% |
-| Qualidade do texto (artigo) | 20% |
-| Descrição e análise de experimentos | 30% |
-
 ## 📄 Licença
 
 Este projeto é para fins acadêmicos - IFMG. 
