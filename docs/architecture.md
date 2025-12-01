@@ -363,6 +363,52 @@ Quando um bucket está cheio mas `local_depth < global_depth`:
 2. Registros redistribuídos pelo novo bit
 3. Atualiza apenas ponteiros relevantes no diretório
 
+### 3.5 Bucket Merging
+
+**Novo em v1.1:** A implementação agora suporta merge de buckets após deleções para otimizar o uso de espaço.
+
+#### Condições para Merge
+
+Dois buckets podem ser merged quando:
+1. São "buddies" (diferem apenas no bit mais significativo)
+2. Ambos têm a mesma `local_depth`
+3. A soma dos registros cabe em um único bucket
+
+#### Processo de Merge
+
+```python
+def _try_merge_buckets(bucket):
+    # 1. Encontra o bucket buddy
+    buddy = _find_buddy_bucket(bucket)
+    
+    # 2. Verifica se merge é possível
+    if len(bucket) + len(buddy) <= capacity:
+        # 3. Cria bucket merged com local_depth reduzido
+        merged = Bucket(local_depth=bucket.local_depth - 1)
+        merged.records = bucket.records + buddy.records
+        
+        # 4. Atualiza diretório
+        for i in directory:
+            if directory[i] in [bucket, buddy]:
+                directory[i] = merged
+```
+
+#### Directory Shrinking
+
+Quando todos os buckets têm `local_depth < global_depth`, o diretório pode ser reduzido:
+
+```python
+def _try_shrink_directory():
+    if all(bucket.local_depth < global_depth for bucket in unique_buckets):
+        global_depth -= 1
+        directory = directory[:2^global_depth]
+```
+
+#### Métricas Adicionais
+
+- `get_load_factor()` - Retorna fator de carga médio (0.0 a 1.0)
+- `stats['load_factor']` - Incluído nas estatísticas
+
 ---
 
 ## 4. Módulo Comum
@@ -525,9 +571,131 @@ Onde:
 
 ---
 
-## 8. Referências
+## 8. Troubleshooting
+
+### 8.1 Erro de Encoding no Windows
+
+**Sintoma:**
+```
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705'
+```
+
+**Causa:** O Windows usa codificação cp1252 por padrão, que não suporta caracteres Unicode como ✅ e ❌.
+
+**Solução:** A partir da versão 1.1, todas as mensagens do `tools/siogen.py` usam apenas caracteres ASCII:
+- `[OK]` em vez de ✅
+- `[ERROR]` em vez de ❌
+
+Se encontrar este erro em versões antigas:
+```bash
+# Opção 1: Atualizar para versão mais recente
+git pull
+
+# Opção 2: Configurar encoding UTF-8 no terminal
+set PYTHONIOENCODING=utf-8
+
+# Opção 3: Redirecionar saída para arquivo
+python tools/siogen.py -i 1000 -d 100 -f data.csv > output.log 2>&1
+```
+
+### 8.2 Merge de Buckets
+
+**Comportamento:** O Hash Extensível implementa merge opcional de buckets para otimização de espaço.
+
+**Quando ocorre:**
+- Após deleções que deixam buckets com poucos registros
+- Quando dois buckets buddies podem ser combinados
+- Automaticamente durante operações de `delete()`
+
+**Métricas:**
+```python
+stats = hash_idx.get_stats()
+print(f"Load factor: {stats['load_factor']:.2f}")  # 0.0 a 1.0
+```
+
+**Desabilitar (se necessário):** Não há flag para desabilitar, mas você pode criar uma subclasse:
+```python
+class ExtendibleHashNoMerge(ExtendibleHash):
+    def _try_merge_buckets(self, bucket):
+        pass  # Não faz nada
+```
+
+### 8.3 Imports com Espaços
+
+**Sintoma:**
+```python
+from .. common.record import Record  # Erro de sintaxe
+```
+
+**Causa:** Espaços incorretos nos imports relativos.
+
+**Solução:** Versão 1.1 corrigiu todos os espaços incorretos. Se encontrar:
+```python
+# ERRADO
+from .. common.record import Record
+from ..common. config import Config
+
+# CORRETO
+from ..common.record import Record
+from ..common.config import Config
+```
+
+### 8.4 Tests Falhando
+
+**Verificação básica:**
+```bash
+# Instalar dependências
+pip install pytest
+
+# Rodar todos os testes
+pytest tests/ -v
+
+# Rodar testes específicos
+pytest tests/test_hash.py -v
+pytest tests/test_bplustree.py -v
+```
+
+**Testes esperados:** 54 testes devem passar (a partir da v1.1)
+
+**Se houver falhas:**
+1. Verifique que `pip install -e .` foi executado
+2. Confirme Python >= 3.8
+3. Limpe cache: `rm -rf .pytest_cache __pycache__`
+
+### 8.5 Performance Degradada
+
+**Sintomas:**
+- Inserções muito lentas
+- Uso excessivo de memória
+
+**Diagnóstico:**
+```python
+# Verificar estatísticas
+stats = index.get_stats()
+print(stats)
+
+# Para Hash: verificar load factor
+print(f"Load factor: {hash_idx.get_load_factor():.2f}")
+
+# Para B+ Tree: verificar altura
+print(f"Altura: {tree.get_height()}")
+```
+
+**Soluções:**
+- **Hash:** Se `load_factor` muito baixo (<0.3), muitos buckets vazios. Considere reinicializar.
+- **B+ Tree:** Se altura > 5, dados muito fragmentados. Considere rebalancear.
+
+---
+
+## 9. Referências
 
 - Ramakrishnan, R., Gehrke, J. "Database Management Systems", 3rd Ed.
 - Elmasri, R., Navathe, S. "Fundamentals of Database Systems", 7th Ed.
 - [docs/master-prompt.md](master-prompt.md) - Guia de implementação
 - [docs/siogen-reference.md](siogen-reference.md) - Referência do SIOgen
+
+---
+
+**Versão:** 1.1  
+**Última atualização:** Dezembro 2025  
+**Autores:** Henrique Augusto, Rayssa Mendes, Henrique Evangelista
