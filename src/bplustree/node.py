@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .. common.record import Record
+    from ..common.record import Record
 
 
 class Node(ABC):
@@ -43,7 +43,7 @@ class Node(ABC):
             raise ValueError(f"Ordem deve ser >= 3, recebido: {order}")
         
         self.order = order
-        self. keys: List[int] = []
+        self.keys: List[int] = []
         self.parent: Optional['InternalNode'] = None
     
     @property
@@ -71,11 +71,11 @@ class Node(ABC):
             True se número de chaves < mínimo
         """
         min_keys = (self.order + 1) // 2 - 1
-        return len(self. keys) < min_keys
+        return len(self.keys) < min_keys
     
     def is_root(self) -> bool:
         """Verifica se é o nó raiz."""
-        return self. parent is None
+        return self.parent is None
     
     @abstractmethod
     def split(self) -> Tuple['Node', int]:
@@ -97,7 +97,7 @@ class Node(ABC):
         Returns:
             Índice onde a chave deveria ser inserida
         """
-        left, right = 0, len(self. keys)
+        left, right = 0, len(self.keys)
         while left < right:
             mid = (left + right) // 2
             if self.keys[mid] < key:
@@ -130,7 +130,7 @@ class LeafNode(Node):
         super().__init__(order)
         self.records: List['Record'] = []
         self.next: Optional['LeafNode'] = None
-        self. prev: Optional['LeafNode'] = None
+        self.prev: Optional['LeafNode'] = None
     
     @property
     def is_leaf(self) -> bool:
@@ -151,12 +151,12 @@ class LeafNode(Node):
         pos = self._binary_search(key)
         
         # Verifica duplicata
-        if pos < len(self. keys) and self.keys[pos] == key:
+        if pos < len(self.keys) and self.keys[pos] == key:
             return False
         
         # Insere na posição correta
-        self.keys. insert(pos, key)
-        self. records.insert(pos, record)
+        self.keys.insert(pos, key)
+        self.records.insert(pos, record)
         return True
     
     def search(self, key: int) -> Optional['Record']:
@@ -200,22 +200,22 @@ class LeafNode(Node):
         Returns:
             Tuple (novo_nó_folha, chave_a_promover)
         """
-        mid = len(self. keys) // 2
+        mid = len(self.keys) // 2
         
         # Cria novo nó com metade superior
         new_node = LeafNode(self.order)
-        new_node. keys = self.keys[mid:]
+        new_node.keys = self.keys[mid:]
         new_node.records = self.records[mid:]
         
         # Mantém metade inferior no nó atual
         self.keys = self.keys[:mid]
-        self. records = self.records[:mid]
+        self.records = self.records[:mid]
         
         # Atualiza ponteiros de lista encadeada
         new_node.next = self.next
         new_node.prev = self
         if self.next:
-            self.next. prev = new_node
+            self.next.prev = new_node
         self.next = new_node
         
         # Promove CÓPIA da primeira chave do novo nó
@@ -266,7 +266,7 @@ class InternalNode(Node):
         Returns:
             Nó filho apropriado para continuar a busca
         """
-        for i, k in enumerate(self. keys):
+        for i, k in enumerate(self.keys):
             if key < k:
                 return self.children[i]
         return self.children[-1]
@@ -298,7 +298,7 @@ class InternalNode(Node):
         while pos < len(self.keys) and self.keys[pos] < key:
             pos += 1
         
-        self. keys.insert(pos, key)
+        self.keys.insert(pos, key)
         self.children.insert(pos + 1, child)
         child.parent = self
     
@@ -313,23 +313,23 @@ class InternalNode(Node):
             Tuple (novo_nó_interno, chave_promovida)
         """
         mid = len(self.keys) // 2
-        promoted_key = self. keys[mid]
+        promoted_key = self.keys[mid]
         
         # Cria novo nó com metade superior
-        new_node = InternalNode(self. order)
+        new_node = InternalNode(self.order)
         new_node.keys = self.keys[mid + 1:]  # Exclui chave promovida
-        new_node. children = self.children[mid + 1:]
+        new_node.children = self.children[mid + 1:]
         
         # Atualiza parent dos filhos movidos
-        for child in new_node. children:
+        for child in new_node.children:
             child.parent = new_node
         
         # Mantém metade inferior no nó atual
-        self. keys = self.keys[:mid]
+        self.keys = self.keys[:mid]
         self.children = self.children[:mid + 1]
         
         return new_node, promoted_key
     
     def __repr__(self) -> str:
         """Representação string do nó interno."""
-        return f"InternalNode(keys={self. keys}, children={len(self.children)})"
+        return f"InternalNode(keys={self.keys}, children={len(self.children)})"

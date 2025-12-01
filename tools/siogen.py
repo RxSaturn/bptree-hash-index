@@ -143,7 +143,7 @@ def get_arguments(print_help=False):
     parser.add_argument('-i', '--insertions', action='store', type=int,
                         default=DEFAULT_INSERT,
                         help=f'Number of insertions (default: {DEFAULT_INSERT})')
-    parser. add_argument('-d', '--deletions', action='store', type=int,
+    parser.add_argument('-d', '--deletions', action='store', type=int,
                         default=DEFAULT_DELETE,
                         help=f'Number of deletions (default: {DEFAULT_DELETE})')
     parser.add_argument('-s', '--searches', action='store', type=int,
@@ -152,7 +152,7 @@ def get_arguments(print_help=False):
     parser.add_argument('-f', '--filename', action='store', type=str,
                         default=DEFAULT_FILE,
                         help=f'Output filename (default: {DEFAULT_FILE})')
-    parser. add_argument('-e', '--seed', action='store', type=int,
+    parser.add_argument('-e', '--seed', action='store', type=int,
                         default=DEFAULT_SEED,
                         help=f'Seed (default: {DEFAULT_SEED})')
     args = parser.parse_args()
@@ -167,19 +167,19 @@ def main():
     
     # Parameter validation
     if args.attributes < 1:
-        print("❌ Erro: Número de atributos deve ser >= 1", file=sys.stderr)
+        print("[ERRO] Numero de atributos deve ser >= 1", file=sys.stderr)
         sys.exit(1)
     if args.insertions < 0:
-        print("❌ Erro: Número de inserções deve ser >= 0", file=sys.stderr)
+        print("[ERRO] Numero de insercoes deve ser >= 0", file=sys.stderr)
         sys.exit(1)
     if args.deletions < 0:
-        print("❌ Erro: Número de deleções deve ser >= 0", file=sys.stderr)
+        print("[ERRO] Numero de delecoes deve ser >= 0", file=sys.stderr)
         sys.exit(1)
     if args.searches < 0:
-        print("❌ Erro: Número de buscas deve ser >= 0", file=sys.stderr)
+        print("[ERRO] Numero de buscas deve ser >= 0", file=sys.stderr)
         sys.exit(1)
     if args.deletions > args.insertions:
-        print("❌ Erro: Número de deleções não pode ser maior que inserções", file=sys.stderr)
+        print("[ERRO] Numero de delecoes nao pode ser maior que insercoes", file=sys.stderr)
         sys.exit(1)
     
     seed(args.seed)
@@ -194,9 +194,9 @@ def main():
     
     try:
         gen_data(par_dict)
-        print(f"✅ Dados gerados em: {args.filename}")
+        print(f"[OK] Dados gerados em: {args.filename}")
     except Exception as e:
-        print(f"❌ Erro ao gerar dados: {e}", file=sys.stderr)
+        print(f"[ERRO] Erro ao gerar dados: {e}", file=sys.stderr)
         sys.exit(1)
 
 

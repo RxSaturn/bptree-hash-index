@@ -9,8 +9,8 @@ Implementa a classe ExtendibleHash que gerencia toda a estrutura do
 
 from typing import Optional, List, Dict, Any, Set
 from .bucket import Bucket
-from .. common.record import Record
-from ..common. config import Config
+from ..common.record import Record
+from ..common.config import Config
 
 
 class ExtendibleHash:
@@ -34,7 +34,7 @@ class ExtendibleHash:
         >>> hash_idx = ExtendibleHash(page_size=512, num_fields=10)
         >>> hash_idx.insert(1, Record([1, 100]))
         True
-        >>> hash_idx. search(1)
+        >>> hash_idx.search(1)
         Record(key=1, fields=[1, 100])
     """
     
@@ -65,7 +65,7 @@ class ExtendibleHash:
         self.global_depth = 1
         
         # Cria buckets iniciais
-        bucket0 = Bucket(local_depth=1, capacity=self. bucket_capacity)
+        bucket0 = Bucket(local_depth=1, capacity=self.bucket_capacity)
         bucket1 = Bucket(local_depth=1, capacity=self.bucket_capacity)
         self.directory: List[Bucket] = [bucket0, bucket1]
         
@@ -121,7 +121,7 @@ class ExtendibleHash:
         bucket = self._get_bucket(key)
         
         # Tenta inserir diretamente
-        if bucket. insert(key, record):
+        if bucket.insert(key, record):
             self.stats['bucket_writes'] += 1
             return True
         
@@ -142,7 +142,7 @@ class ExtendibleHash:
             record: Registro a inserir
         """
         index = self._hash(key)
-        bucket = self. directory[index]
+        bucket = self.directory[index]
         
         if bucket.local_depth < self.global_depth:
             # Split apenas o bucket
@@ -187,7 +187,7 @@ class ExtendibleHash:
         """
         self.stats['splits'] += 1
         
-        old_bucket = self. directory[index]
+        old_bucket = self.directory[index]
         bucket0, bucket1 = old_bucket.split()
         
         self.stats['bucket_writes'] += 2
@@ -252,7 +252,7 @@ class ExtendibleHash:
         Returns:
             Dicionário com contadores e métricas
         """
-        stats = self.stats. copy()
+        stats = self.stats.copy()
         stats['global_depth'] = self.global_depth
         stats['num_buckets'] = self._count_unique_buckets()
         stats['directory_size'] = len(self.directory)
@@ -268,7 +268,7 @@ class ExtendibleHash:
     def reset_stats(self) -> None:
         """Reseta contadores de estatísticas."""
         for key in ['bucket_reads', 'bucket_writes', 'splits', 'directory_doublings']:
-            self. stats[key] = 0
+            self.stats[key] = 0
     
     def get_info(self) -> Dict[str, Any]:
         """
@@ -278,19 +278,19 @@ class ExtendibleHash:
             Dicionário com informações da estrutura
         """
         return {
-            'global_depth': self. global_depth,
+            'global_depth': self.global_depth,
             'bucket_capacity': self.bucket_capacity,
             'num_buckets': self._count_unique_buckets(),
             'directory_size': len(self.directory),
-            'page_size': self. config.page_size,
-            'num_fields': self. config.num_fields,
+            'page_size': self.config.page_size,
+            'num_fields': self.config.num_fields,
             'stats': self.get_stats()
         }
     
     def __repr__(self) -> str:
         """Representação string do hash."""
         return (
-            f"ExtendibleHash(global_depth={self. global_depth}, "
+            f"ExtendibleHash(global_depth={self.global_depth}, "
             f"buckets={self._count_unique_buckets()}, "
             f"directory_size={len(self.directory)})"
         )

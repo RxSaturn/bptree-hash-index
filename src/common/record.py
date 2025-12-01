@@ -27,7 +27,7 @@ class Record:
         
     Example:
         >>> record = Record([1, 100, 200, 300])
-        >>> record. key
+        >>> record.key
         1
         >>> record.num_fields
         4
@@ -123,7 +123,7 @@ class Record:
         """Compara dois registros por seus campos."""
         if not isinstance(other, Record):
             return False
-        return self.fields == other. fields
+        return self.fields == other.fields
     
     def __hash__(self) -> int:
         """Hash baseado nos campos do registro."""
