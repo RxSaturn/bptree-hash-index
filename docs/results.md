@@ -162,7 +162,7 @@ Número de vezes que o diretório precisou ser dobrado durante as inserções.
 Todos os experimentos apresentaram 100% de sucesso nas buscas (todas as chaves inseridas foram encontradas).
 
 ### 5.2 Load Factor Médio do Hash
-O load factor médio observado foi de **0.77** (77% de ocupação dos buckets), indicando um bom balanceamento entre uso de espaço e desempenho.
+O load factor médio observado foi de **0.77** (77% de ocupação dos buckets), calculado como a média aritmética dos valores mínimo e máximo observados (0.65 + 0.89) / 2, indicando um bom balanceamento entre uso de espaço e desempenho.
 
 ### 5.3 Profundidade Global Média
 A profundidade global média foi de **7.5 bits**, correspondendo a diretórios com 128-256 entradas.
