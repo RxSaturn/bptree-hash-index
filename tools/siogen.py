@@ -167,19 +167,19 @@ def main():
     
     # Parameter validation
     if args.attributes < 1:
-        print("[ERRO] Numero de atributos deve ser >= 1", file=sys.stderr)
+        print("[ERROR] Number of attributes must be >= 1", file=sys.stderr)
         sys.exit(1)
     if args.insertions < 0:
-        print("[ERRO] Numero de insercoes deve ser >= 0", file=sys.stderr)
+        print("[ERROR] Number of insertions must be >= 0", file=sys.stderr)
         sys.exit(1)
     if args.deletions < 0:
-        print("[ERRO] Numero de delecoes deve ser >= 0", file=sys.stderr)
+        print("[ERROR] Number of deletions must be >= 0", file=sys.stderr)
         sys.exit(1)
     if args.searches < 0:
-        print("[ERRO] Numero de buscas deve ser >= 0", file=sys.stderr)
+        print("[ERROR] Number of searches must be >= 0", file=sys.stderr)
         sys.exit(1)
     if args.deletions > args.insertions:
-        print("[ERRO] Numero de delecoes nao pode ser maior que insercoes", file=sys.stderr)
+        print("[ERROR] Number of deletions cannot be greater than insertions", file=sys.stderr)
         sys.exit(1)
     
     seed(args.seed)
@@ -194,9 +194,9 @@ def main():
     
     try:
         gen_data(par_dict)
-        print(f"[OK] Dados gerados em: {args.filename}")
+        print(f"[OK] Data generated at: {args.filename}")
     except Exception as e:
-        print(f"[ERRO] Erro ao gerar dados: {e}", file=sys.stderr)
+        print(f"[ERROR] Error generating data: {e}", file=sys.stderr)
         sys.exit(1)
 
 

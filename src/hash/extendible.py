@@ -165,16 +165,29 @@ class ExtendibleHash:
         Dobra o tamanho do diretório.
         
         Duplica cada entrada do diretório, mantendo os ponteiros
-        para os mesmos buckets. 
+        para os mesmos buckets. Os buckets com local_depth < global_depth
+        devem aparecer em múltiplas posições que diferem apenas nos bits
+        mais significativos.
         """
         self.stats['directory_doublings'] += 1
         self.global_depth += 1
         
-        # Duplica entradas
+        # Duplica diretório mantendo a estrutura correta
+        # Se tínhamos [A, B], criamos [A, B, A, B] não [A, A, B, B]
+        # porque as entradas do novo diretório são organizadas por
+        # valor hash completo, e buckets com local_depth menor que
+        # global_depth servem múltiplas entradas com padrões diferentes
+        # nos bits mais significativos
+        old_directory = self.directory
         new_directory: List[Bucket] = []
-        for bucket in self.directory:
-            new_directory.append(bucket)
-            new_directory.append(bucket)
+        
+        # Cada entrada antiga aparece em 2 novas posições:
+        # - Na mesma posição relativa na primeira metade
+        # - Na mesma posição relativa na segunda metade
+        for i in range(len(old_directory)):
+            new_directory.append(old_directory[i])
+        for i in range(len(old_directory)):
+            new_directory.append(old_directory[i])
         
         self.directory = new_directory
     
