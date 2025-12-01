@@ -7,7 +7,7 @@ Implementa a classe ExtendibleHash que gerencia toda a estrutura do
 índice hash extensível, incluindo o diretório e os buckets.
 """
 
-from typing import Optional, List, Dict, Any, Set
+from typing import Optional, List, Dict, Any, Set, Tuple
 from .bucket import Bucket
 from ..common.record import Record
 from ..common.config import Config
@@ -254,9 +254,148 @@ class ExtendibleHash:
         
         if record:
             self.stats['bucket_writes'] += 1
-            # TODO: Implementar merge de buckets se desejado
+            # Tenta fazer merge após deleção
+            self._try_merge_buckets(bucket)
+            self._try_shrink_directory()
         
         return record
+    
+    def _find_buddy_bucket(self, bucket: Bucket, bucket_index: int) -> Optional[Tuple[Bucket, int]]:
+        """
+        Encontra o bucket irmão (buddy) para possível merge.
+        
+        Dois buckets são buddies se diferem apenas no bit mais significativo
+        da sua profundidade local.
+        
+        Args:
+            bucket: Bucket para encontrar o buddy
+            bucket_index: Índice do bucket no diretório
+            
+        Returns:
+            Tuple (buddy_bucket, buddy_index) ou None se não houver buddy
+        """
+        if bucket.local_depth <= 0:
+            return None
+        
+        # Calcula o índice do buddy alterando o bit relevante
+        buddy_bit = 1 << (bucket.local_depth - 1)
+        buddy_index = bucket_index ^ buddy_bit
+        
+        if buddy_index >= len(self.directory):
+            return None
+        
+        buddy_bucket = self.directory[buddy_index]
+        
+        # Verifica se é realmente um buddy (mesma profundidade local)
+        if buddy_bucket.local_depth == bucket.local_depth:
+            # Verifica se não é o mesmo bucket (isso pode acontecer)
+            if buddy_bucket is not bucket:
+                return (buddy_bucket, buddy_index)
+        
+        return None
+    
+    def _try_merge_buckets(self, bucket: Bucket) -> None:
+        """
+        Tenta fazer merge de buckets quando possível.
+        
+        Merge é possível quando:
+        1. Bucket e seu buddy têm a mesma local_depth
+        2. A soma dos registros cabe em um único bucket
+        3. Ambos os buckets são buddies (diferem em apenas 1 bit)
+        
+        Args:
+            bucket: Bucket a verificar para merge
+        """
+        if bucket.local_depth <= 1:
+            # Não pode fazer merge de buckets com profundidade 1
+            return
+        
+        # Encontra o índice deste bucket no diretório
+        bucket_index = -1
+        for i, b in enumerate(self.directory):
+            if b is bucket:
+                bucket_index = i
+                break
+        
+        if bucket_index == -1:
+            return
+        
+        # Encontra o buddy bucket
+        buddy_result = self._find_buddy_bucket(bucket, bucket_index)
+        if buddy_result is None:
+            return
+        
+        buddy_bucket, buddy_index = buddy_result
+        
+        # Verifica se o merge é possível (registros cabem em um bucket)
+        total_records = len(bucket.records) + len(buddy_bucket.records)
+        if total_records > bucket.capacity:
+            return
+        
+        # Faz o merge: combina registros no bucket atual
+        merged_bucket = Bucket(
+            local_depth=bucket.local_depth - 1,
+            capacity=bucket.capacity
+        )
+        merged_bucket.records = bucket.records + buddy_bucket.records
+        
+        self.stats['bucket_writes'] += 1
+        
+        # Atualiza todas as entradas do diretório que apontavam para
+        # os buckets antigos para apontar para o bucket merged
+        for i in range(len(self.directory)):
+            if self.directory[i] is bucket or self.directory[i] is buddy_bucket:
+                self.directory[i] = merged_bucket
+    
+    def _try_shrink_directory(self) -> None:
+        """
+        Tenta reduzir o diretório pela metade quando todos os
+        buckets têm local_depth < global_depth.
+        
+        Isso é possível quando nenhum bucket precisa da profundidade
+        global atual, indicando que o diretório pode ser reduzido.
+        """
+        if self.global_depth <= 1:
+            return
+        
+        # Verifica se todos os buckets têm local_depth < global_depth
+        unique_buckets = set()
+        for bucket in self.directory:
+            unique_buckets.add(id(bucket))
+            if bucket.local_depth >= self.global_depth:
+                return
+        
+        # Reduz o diretório pela metade
+        self.global_depth -= 1
+        new_size = 1 << self.global_depth
+        self.directory = self.directory[:new_size]
+    
+    def get_load_factor(self) -> float:
+        """
+        Retorna o fator de carga médio dos buckets.
+        
+        Returns:
+            Fator de carga (0.0 a 1.0) representando a ocupação média
+        """
+        seen_ids: Set[int] = set()
+        unique_buckets: List[Bucket] = []
+        
+        for bucket in self.directory:
+            bucket_id = id(bucket)
+            if bucket_id not in seen_ids:
+                seen_ids.add(bucket_id)
+                unique_buckets.append(bucket)
+        
+        if not unique_buckets:
+            return 0.0
+        
+        total_records = sum(len(b.records) for b in unique_buckets)
+        total_capacity = sum(b.capacity for b in unique_buckets)
+        
+        if total_capacity == 0:
+            return 0.0
+        
+        return total_records / total_capacity
     
     def get_stats(self) -> Dict[str, Any]:
         """
@@ -269,6 +408,7 @@ class ExtendibleHash:
         stats['global_depth'] = self.global_depth
         stats['num_buckets'] = self._count_unique_buckets()
         stats['directory_size'] = len(self.directory)
+        stats['load_factor'] = self.get_load_factor()
         return stats
     
     def _count_unique_buckets(self) -> int:
