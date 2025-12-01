@@ -307,7 +307,8 @@ class ExtendibleHash:
             bucket: Bucket a verificar para merge
         """
         if bucket.local_depth <= 1:
-            # Não pode fazer merge de buckets com profundidade 1
+            # Não pode fazer merge de buckets com profundidade <= 1
+            # pois resultaria em profundidade 0, que não é suportado
             return
         
         # Encontra o índice deste bucket no diretório

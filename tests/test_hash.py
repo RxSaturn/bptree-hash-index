@@ -8,9 +8,9 @@ Execute com: pytest tests/test_hash.py -v
 
 import pytest
 import sys
-sys.path.insert(0, '. .')
+sys.path.insert(0, '..')
 
-from src. hash.extendible import ExtendibleHash
+from src.hash.extendible import ExtendibleHash
 from src.common.record import Record
 
 
@@ -41,7 +41,7 @@ class TestExtendibleHashBasic:
         found = hash_idx.search(1)
         
         assert found is not None
-        assert found. key == 1
+        assert found.key == 1
         assert found.fields == [1, 100, 200]
     
     def test_search_nonexistent(self):
@@ -77,30 +77,30 @@ class TestExtendibleHashSplit:
         
         # Verifica que todos podem ser encontrados
         for i in range(10):
-            found = hash_idx. search(i)
+            found = hash_idx.search(i)
             assert found is not None
             assert found.key == i
     
     def test_directory_doubling(self):
         """Testa que diretório dobra quando necessário."""
         hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
-        initial_size = len(hash_idx. directory)
+        initial_size = len(hash_idx.directory)
         
         # Insere muitos registros
         for i in range(20):
             hash_idx.insert(i, Record([i, i * 10]))
         
         # Diretório deve ter crescido
-        assert len(hash_idx. directory) > initial_size
+        assert len(hash_idx.directory) > initial_size
     
     def test_global_depth_increases(self):
         """Testa que profundidade global aumenta."""
         hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
-        initial_depth = hash_idx. global_depth
+        initial_depth = hash_idx.global_depth
         
         # Insere muitos registros
         for i in range(50):
-            hash_idx. insert(i, Record([i, i * 10]))
+            hash_idx.insert(i, Record([i, i * 10]))
         
         assert hash_idx.global_depth > initial_depth
 
@@ -166,7 +166,7 @@ class TestExtendibleHashStats:
         for i in range(20):
             hash_idx.insert(i, Record([i, i * 10]))
         
-        stats = hash_idx. get_stats()
+        stats = hash_idx.get_stats()
         
         assert stats['bucket_writes'] > 0
         assert stats['splits'] > 0
