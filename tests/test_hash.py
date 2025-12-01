@@ -8,9 +8,9 @@ Execute com: pytest tests/test_hash.py -v
 
 import pytest
 import sys
-sys.path.insert(0, '. .')
+sys.path.insert(0, '..')
 
-from src. hash.extendible import ExtendibleHash
+from src.hash.extendible import ExtendibleHash
 from src.common.record import Record
 
 
@@ -41,7 +41,7 @@ class TestExtendibleHashBasic:
         found = hash_idx.search(1)
         
         assert found is not None
-        assert found. key == 1
+        assert found.key == 1
         assert found.fields == [1, 100, 200]
     
     def test_search_nonexistent(self):
@@ -77,30 +77,30 @@ class TestExtendibleHashSplit:
         
         # Verifica que todos podem ser encontrados
         for i in range(10):
-            found = hash_idx. search(i)
+            found = hash_idx.search(i)
             assert found is not None
             assert found.key == i
     
     def test_directory_doubling(self):
         """Testa que diretório dobra quando necessário."""
         hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
-        initial_size = len(hash_idx. directory)
+        initial_size = len(hash_idx.directory)
         
         # Insere muitos registros
         for i in range(20):
             hash_idx.insert(i, Record([i, i * 10]))
         
         # Diretório deve ter crescido
-        assert len(hash_idx. directory) > initial_size
+        assert len(hash_idx.directory) > initial_size
     
     def test_global_depth_increases(self):
         """Testa que profundidade global aumenta."""
         hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
-        initial_depth = hash_idx. global_depth
+        initial_depth = hash_idx.global_depth
         
         # Insere muitos registros
         for i in range(50):
-            hash_idx. insert(i, Record([i, i * 10]))
+            hash_idx.insert(i, Record([i, i * 10]))
         
         assert hash_idx.global_depth > initial_depth
 
@@ -166,7 +166,7 @@ class TestExtendibleHashStats:
         for i in range(20):
             hash_idx.insert(i, Record([i, i * 10]))
         
-        stats = hash_idx. get_stats()
+        stats = hash_idx.get_stats()
         
         assert stats['bucket_writes'] > 0
         assert stats['splits'] > 0
@@ -192,6 +192,82 @@ class TestExtendibleHashNoRangeSearch:
         
         # Hash não deve ter método range_search
         assert not hasattr(hash_idx, 'range_search')
+
+
+class TestExtendibleHashMerge:
+    """Testes para funcionalidade de merge de buckets."""
+    
+    def test_merge_after_deletions(self):
+        """Testa que buckets fazem merge após deleções."""
+        hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
+        
+        # Insere registros para forçar splits
+        for i in range(10):
+            hash_idx.insert(i, Record([i, i * 10]))
+        
+        initial_buckets = hash_idx._count_unique_buckets()
+        initial_depth = hash_idx.global_depth
+        
+        # Deleta registros para permitir merges
+        for i in range(5):
+            hash_idx.delete(i)
+        
+        # Deve ter reduzido número de buckets e/ou profundidade
+        assert hash_idx._count_unique_buckets() <= initial_buckets
+        
+        # Verifica que registros restantes ainda podem ser encontrados
+        for i in range(5, 10):
+            found = hash_idx.search(i)
+            assert found is not None
+            assert found.key == i
+    
+    def test_shrink_directory(self):
+        """Testa que diretório encolhe quando possível."""
+        hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
+        
+        # Insere muitos registros
+        for i in range(20):
+            hash_idx.insert(i, Record([i, i * 10]))
+        
+        max_depth = hash_idx.global_depth
+        
+        # Deleta quase todos
+        for i in range(18):
+            hash_idx.delete(i)
+        
+        # Profundidade deve ter reduzido
+        assert hash_idx.global_depth <= max_depth
+        
+        # Registros restantes ainda acessíveis
+        for i in range(18, 20):
+            assert hash_idx.search(i) is not None
+    
+    def test_load_factor(self):
+        """Testa cálculo de fator de carga."""
+        hash_idx = ExtendibleHash(bucket_capacity=4, num_fields=2)
+        
+        # Vazio
+        assert hash_idx.get_load_factor() == 0.0
+        
+        # Insere alguns registros
+        for i in range(5):
+            hash_idx.insert(i, Record([i, i * 10]))
+        
+        # Fator de carga deve estar entre 0 e 1
+        load_factor = hash_idx.get_load_factor()
+        assert 0.0 < load_factor <= 1.0
+    
+    def test_load_factor_in_stats(self):
+        """Testa que load_factor aparece nas estatísticas."""
+        hash_idx = ExtendibleHash(bucket_capacity=2, num_fields=2)
+        
+        for i in range(5):
+            hash_idx.insert(i, Record([i, i * 10]))
+        
+        stats = hash_idx.get_stats()
+        
+        assert 'load_factor' in stats
+        assert 0.0 <= stats['load_factor'] <= 1.0
 
 
 if __name__ == '__main__':

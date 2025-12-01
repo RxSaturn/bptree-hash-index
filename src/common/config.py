@@ -32,7 +32,7 @@ class Config:
             raise ValueError(
                 f"Tamanho de página deve ser >= 256 bytes, recebido: {self.page_size}"
             )
-        if self. num_fields < 1:
+        if self.num_fields < 1:
             raise ValueError(
                 f"Número de campos deve ser >= 1, recebido: {self.num_fields}"
             )
@@ -40,7 +40,7 @@ class Config:
     @property
     def record_size(self) -> int:
         """Tamanho de um registro em bytes."""
-        return self. num_fields * self. field_size
+        return self.num_fields * self.field_size
     
     @property
     def key_size(self) -> int:
@@ -58,7 +58,7 @@ class Config:
             Ordem calculada (mínimo 3)
         """
         # Tamanho de uma entrada no nó folha
-        entry_size = self.key_size + self. record_size
+        entry_size = self.key_size + self.record_size
         
         # Ordem = quantas entradas cabem na página
         order = self.page_size // entry_size
@@ -72,7 +72,7 @@ class Config:
         Returns:
             Número de registros por bucket (mínimo 2)
         """
-        entry_size = self. key_size + self.record_size
+        entry_size = self.key_size + self.record_size
         capacity = self.page_size // entry_size
         return max(2, capacity)
 

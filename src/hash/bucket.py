@@ -31,9 +31,9 @@ class Bucket:
         
     Example:
         >>> bucket = Bucket(local_depth=2, capacity=4)
-        >>> bucket. insert(5, record)
+        >>> bucket.insert(5, record)
         True
-        >>> bucket. is_full()
+        >>> bucket.is_full()
         False
     """
     local_depth: int
@@ -88,7 +88,7 @@ class Bucket:
         Complexity:
             Time: O(n) onde n é o número de registros no bucket
         """
-        for k, record in self. records:
+        for k, record in self.records:
             if k == key:
                 return record
         return None
@@ -119,7 +119,7 @@ class Bucket:
         Returns:
             Tuple com dois novos buckets (bucket0, bucket1)
         """
-        new_depth = self. local_depth + 1
+        new_depth = self.local_depth + 1
         bucket0 = Bucket(local_depth=new_depth, capacity=self.capacity)
         bucket1 = Bucket(local_depth=new_depth, capacity=self.capacity)
         
@@ -127,11 +127,11 @@ class Bucket:
         mask = 1 << (new_depth - 1)
         
         # Redistribui registros baseado no novo bit
-        for key, record in self. records:
+        for key, record in self.records:
             if key & mask:
                 bucket1.records.append((key, record))
             else:
-                bucket0.records. append((key, record))
+                bucket0.records.append((key, record))
         
         return bucket0, bucket1
     
@@ -143,5 +143,5 @@ class Bucket:
         """Representação string do bucket."""
         return (
             f"Bucket(local_depth={self.local_depth}, "
-            f"records={len(self. records)}/{self.capacity})"
+            f"records={len(self.records)}/{self.capacity})"
         )
