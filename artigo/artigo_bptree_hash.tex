@@ -51,8 +51,8 @@ Estruturas de indexação são componentes fundamentais em sistemas gerenciadore
 A escolha adequada da estrutura de índice tem impacto direto no desempenho do sistema, afetando operações de inserção, busca, atualização e remoção de registros.
 
 Entre as estruturas de indexação mais utilizadas, destacam-se a árvore B+ (B+ Tree) e o hash extensível (Extendible Hash).
-A B+ Tree, proposta por \citeonline{comer:1979:btree}, é uma estrutura balanceada que mantém os dados ordenados e oferece garantias de desempenho logarítmico para operações básicas, além de suportar eficientemente buscas por intervalo (range queries).
-Por outro lado, o hash extensível, introduzido por \citeonline{fagin:1979:extendible}, é uma estrutura dinâmica que oferece acesso em tempo constante amortizado para buscas por igualdade, crescendo e diminuindo conforme a necessidade sem requerer reorganização completa da estrutura.
+A B+ Tree, proposta por \citet{comer:1979:btree}, é uma estrutura balanceada que mantém os dados ordenados e oferece garantias de desempenho logarítmico para operações básicas, além de suportar eficientemente buscas por intervalo (range queries).
+Por outro lado, o hash extensível, introduzido por \citet{fagin:1979:extendible}, é uma estrutura dinâmica que oferece acesso em tempo constante amortizado para buscas por igualdade, crescendo e diminuindo conforme a necessidade sem requerer reorganização completa da estrutura.
 
 Apesar da ampla cobertura teórica dessas estruturas na literatura \cite{silberschatz:2019:database, cormen:2009:algorithms}, a implementação prática e a análise experimental comparativa são essenciais para compreender suas características reais de desempenho e os trade-offs envolvidos em diferentes cenários de uso.
 Este trabalho apresenta uma implementação completa de ambas as estruturas em Python, seguida de uma análise experimental sistemática que avalia o comportamento sob diferentes configurações de parâmetros.
@@ -117,7 +117,7 @@ Suas principais características são:
 
 \subsection{Hash Extensível}
 
-O hash extensível é uma estrutura de hash dinâmica proposta por \citeonline{fagin:1979:extendible} que cresce e diminui conforme necessário sem requerer reorganização completa.
+O hash extensível é uma estrutura de hash dinâmica proposta por \citet{fagin:1979:extendible} que cresce e diminui conforme necessário sem requerer reorganização completa.
 Suas principais características são:
 
 \begin{itemize}
@@ -172,19 +172,19 @@ O código foi organizado em módulos conforme a estrutura apresentada na Figura 
 \centering
 \begin{verbatim}
 projeto/
-├── src/
-│   ├── bplustree/    # Implementação B+ Tree
-│   │   ├── node.py   # Classes de nós
-│   │   └── tree.py   # Classe principal
-│   ├── hash/         # Implementação Hash Extensível
-│   │   ├── bucket.py # Classe Bucket
-│   │   └── extendible.py # Classe principal
-│   └── common/       # Código compartilhado
-│       ├── record.py # Classe Record
-│       └── config.py # Configurações
-├── experiments/      # Scripts de experimentos
-├── data/            # Datasets gerados
-└── results/         # Resultados experimentais
+|-- src/
+|   |-- bplustree/    # Implementação B+ Tree
+|   |   |-- node.py   # Classes de nós
+|   |   \-- tree.py   # Classe principal
+|   |-- hash/         # Implementação Hash Extensível
+|   |   |-- bucket.py # Classe Bucket
+|   |   \-- extendible.py # Classe principal
+|   \-- common/       # Código compartilhado
+|       |-- record.py # Classe Record
+|       \-- config.py # Configurações
+|-- experiments/      # Scripts de experimentos
+|-- data/            # Datasets gerados
+\-- results/         # Resultados experimentais
 \end{verbatim}
 \caption{Estrutura do projeto de implementação}
 \label{fig:estrutura_projeto}
