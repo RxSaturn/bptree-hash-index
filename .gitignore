@@ -126,3 +126,5 @@ artigo/*.bcf
 artigo/*.idx
 artigo/*.xml
 artigo/figuras/*png
+artigo/*.ilg
+artigo/*.ind
