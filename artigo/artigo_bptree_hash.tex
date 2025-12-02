@@ -5,16 +5,10 @@
 \titulo{Implementação e Análise Comparativa de Índices B+ Tree e Hash Extensível em Python}
 \tituloestrangeiro{Implementation and Comparative Analysis of B+ Tree and Extendible Hash Indexes in Python}
 
-\autor{Henrique Augusto G. Fernandes}
-\email{henrique.fernandes@estudante.ifmg.edu.br}
+\autor{Henrique Augusto G. Fernandes \\ Henrique Evangelista Pimentel \\ Rayssa Mendes da Silva}
+\email{henrique.fernandes@estudante.ifmg.edu.br \\ henrique.pimentel@estudante.ifmg.edu.br \\ rayssa.silva@estudante.ifmg.edu.br}
 
-\autor{Henrique Evangelista Pimentel}
-\email{henrique.pimentel@estudante.ifmg.edu.br}
-
-\autor{Rayssa Mendes da Silva}
-\email{rayssa.silva@estudante.ifmg.edu.br}
-
-\orientador{Prof. Marcos Roberto Ribeiro}
+\orientador[M]{Prof. Marcos Roberto Ribeiro}
 
 \instituicao[IFMG]{Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais}
 \campus{Bambuí}
@@ -170,22 +164,7 @@ O código foi organizado em módulos conforme a estrutura apresentada na Figura 
 
 \begin{figure}[htb]
 \centering
-\begin{verbatim}
-projeto/
-|-- src/
-|   |-- bplustree/    # Implementação B+ Tree
-|   |   |-- node.py   # Classes de nós
-|   |   \-- tree.py   # Classe principal
-|   |-- hash/         # Implementação Hash Extensível
-|   |   |-- bucket.py # Classe Bucket
-|   |   \-- extendible.py # Classe principal
-|   \-- common/       # Código compartilhado
-|       |-- record.py # Classe Record
-|       \-- config.py # Configurações
-|-- experiments/      # Scripts de experimentos
-|-- data/            # Datasets gerados
-\-- results/         # Resultados experimentais
-\end{verbatim}
+\includegraphics[width=0.7\textwidth]{figuras/estrutura_projeto.png}
 \caption{Estrutura do projeto de implementação}
 \label{fig:estrutura_projeto}
 \legend{Elaborado pelos autores, 2024.}

@@ -998,7 +998,7 @@ def load_siogen_data(filename: str) -> List[Tuple[str, List[int]]]:
 def run_bplus_experiment(config: ExperimentConfig, data: List[Tuple[str, List[int]]]) -> ExperimentResult:
     """Executa experimento com B+ Tree."""
     tree = BPlusTree(
-        page_size=config. page_size,
+        page_size=config.page_size,
         num_fields=config.num_fields
     )
     
@@ -1116,12 +1116,12 @@ def main():
     for config in configs:
         # Gera dados com SIOgen
         import subprocess
-        data_file = f'data/exp_{config.num_fields}_{config.page_size}_{config.num_insertions}. csv'
+        data_file = f'data/exp_{config.num_fields}_{config.page_size}_{config.num_insertions}.csv'
         subprocess.run([
             'python', 'siogen.py',
-            '-a', str(config. num_fields),
-            '-i', str(config. num_insertions),
-            '-d', str(config. num_deletions),
+            '-a', str(config.num_fields),
+            '-i', str(config.num_insertions),
+            '-d', str(config.num_deletions),
             '-s', str(config.num_searches),
             '-f', data_file,
             '-e', str(config.seed)
@@ -1145,9 +1145,9 @@ def main():
         print(f"  Search: {bplus_result.search_time:.4f}s, Stats: {bplus_result.stats['search']}")
         print(f"  Delete: {bplus_result.delete_time:.4f}s")
         print(f"\nHash Extensível:")
-        print(f"  Insert: {hash_result. insert_time:.4f}s, Stats: {hash_result.stats['insert']}")
-        print(f"  Search: {hash_result. search_time:.4f}s, Stats: {hash_result.stats['search']}")
-        print(f"  Delete: {hash_result. delete_time:.4f}s")
+        print(f"  Insert: {hash_result.insert_time:.4f}s, Stats: {hash_result.stats['insert']}")
+        print(f"  Search: {hash_result.search_time:.4f}s, Stats: {hash_result.stats['search']}")
+        print(f"  Delete: {hash_result.delete_time:.4f}s")
     
     # Salva resultados
     save_results(results)
@@ -1169,13 +1169,13 @@ def save_results(results: List[ExperimentResult]):
                 r.config.num_fields,
                 r.config.page_size,
                 r.config.num_insertions,
-                r.config. num_searches,
-                r.config. num_deletions,
+                r.config.num_searches,
+                r.config.num_deletions,
                 r.insert_time,
                 r.search_time,
-                r. delete_time,
-                r.stats['insert']. get('page_reads', r.stats['insert']. get('bucket_reads', 0)),
-                r. stats['insert'].get('page_writes', r.stats['insert'].get('bucket_writes', 0)),
+                r.delete_time,
+                r.stats['insert'].get('page_reads', r.stats['insert'].get('bucket_reads', 0)),
+                r.stats['insert'].get('page_writes', r.stats['insert'].get('bucket_writes', 0)),
                 r.stats['insert'].get('splits', 0)
             ])
 
@@ -1393,7 +1393,7 @@ python siogen.py [opções]
 ## Formato de Saída
 
 O arquivo CSV gerado contém:
-- Coluna `OP`: Operação (`+` inserção, `-` deleção, `? ` busca)
+- Coluna `OP`: Operação (`+` inserção, `-` deleção, `?` busca)
 - Colunas `A1` a `An`: Valores dos atributos (inteiros 0-1000)
 - `A1` é sempre a chave primária
 
@@ -1404,10 +1404,10 @@ O arquivo CSV gerado contém:
 python siogen.py -a 10 -i 5000 -d 500 -s 3000 -f exp1.csv
 
 # Muitos campos
-python siogen. py -a 50 -i 10000 -d 1000 -s 5000 -f exp2.csv
+python siogen.py -a 50 -i 10000 -d 1000 -s 5000 -f exp2.csv
 
 # Volume alto
-python siogen. py -a 10 -i 50000 -d 5000 -s 20000 -f exp3.csv
+python siogen.py -a 10 -i 50000 -d 5000 -s 20000 -f exp3.csv
 ```
 
 ## Processamento no Python
@@ -1460,7 +1460,7 @@ for op, fields in data:
 | 2 | `02-siogen-reference.md` | Knowledge | 🟡 Alto | ~5% |
 | 3 | Código implementado (quando existir) | Source | 🔴 Crítico | ~40% |
 | 4 | Template `iftex2024` | Reference | 🟢 Médio | ~10% |
-| 5 | `siogen. py` | Reference | 🟡 Alto | ~5% |
+| 5 | `siogen.py` | Reference | 🟡 Alto | ~5% |
 | **Total** | | | | **~85%** |
 
 ### **Fluxo de Trabalho Recomendado**

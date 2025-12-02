@@ -116,19 +116,19 @@ def gerar_latex_tabela():
 \label{tab:resultados_gerais}
 \begin{tabular}{|l|l|r|r|r|r|r|}
 \hline
-\textbf{Experimento} & \textbf{Índice} & \textbf{Reg.} & \textbf{Ins.  (s)} & \textbf{Busca (s)} & \textbf{Rem. (s)} & \textbf{Splits} \\
+\textbf{Experimento} & \textbf{Índice} & \textbf{Reg.} & \textbf{Ins. (s)} & \textbf{Busca (s)} & \textbf{Rem. (s)} & \textbf{Splits} \\
 \hline
-fields\_10 & B+Tree & 1000 & 0.0523 & 0.0089 & 0. 0034 & 45 \\
-fields\_10 & Hash & 1000 & 0. 0234 & 0.0012 & 0.0021 & 23 \\
+fields\_10 & B+Tree & 1000 & 0.0523 & 0.0089 & 0.0034 & 45 \\
+fields\_10 & Hash & 1000 & 0.0234 & 0.0012 & 0.0021 & 23 \\
 \hline
-page\_512 & B+Tree & 1000 & 0. 0498 & 0.0092 & 0.0031 & 42 \\
+page\_512 & B+Tree & 1000 & 0.0498 & 0.0092 & 0.0031 & 42 \\
 page\_512 & Hash & 1000 & 0.0221 & 0.0011 & 0.0019 & 21 \\
 \hline
-vol\_medium & B+Tree & 2000 & 0.1245 & 0. 0185 & 0.0078 & 89 \\
-vol\_medium & Hash & 2000 & 0.0512 & 0.0024 & 0. 0045 & 45 \\
+vol\_medium & B+Tree & 2000 & 0.1245 & 0.0185 & 0.0078 & 89 \\
+vol\_medium & Hash & 2000 & 0.0512 & 0.0024 & 0.0045 & 45 \\
 \hline
 \end{tabular}
-\legend{Elaborado pelos autores, 2024. }
+\legend{Elaborado pelos autores, 2024.}
 \end{table}
 """
     else:
@@ -136,7 +136,7 @@ vol\_medium & Hash & 2000 & 0.0512 & 0.0024 & 0. 0045 & 45 \\
         linhas = []
         for _, row in df.iterrows():
             linha = f"{row['experiment_name']} & {row['index_type']} & {int(row['num_insertions'])} & "
-            linha += f"{row['insert_time']:.4f} & {row['search_time']:. 4f} & "
+            linha += f"{row['insert_time']:.4f} & {row['search_time']:.4f} & "
             linha += f"{row['delete_time']:.4f} & {int(row['insert_splits'])} \\\\"
             linhas.append(linha)
         
@@ -147,9 +147,9 @@ vol\_medium & Hash & 2000 & 0.0512 & 0.0024 & 0. 0045 & 45 \\
 \label{tab:resultados_gerais}
 \begin{tabular}{|l|l|r|r|r|r|r|}
 \hline
-\textbf{Experimento} & \textbf{Índice} & \textbf{Reg.} & \textbf{Ins. (s)} & \textbf{Busca (s)} & \textbf{Rem.  (s)} & \textbf{Splits} \\
+\textbf{Experimento} & \textbf{Índice} & \textbf{Reg.} & \textbf{Ins. (s)} & \textbf{Busca (s)} & \textbf{Rem. (s)} & \textbf{Splits} \\
 \hline
-""" + "\n". join(linhas) + r"""
+""" + "\n".join(linhas) + r"""
 \hline
 \end{tabular}
 \legend{Elaborado pelos autores, 2024.}

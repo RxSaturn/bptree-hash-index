@@ -16,7 +16,7 @@ def criar_estrutura_projeto():
 bptree-hash-index/
 ├── src/
 │   ├── bplustree/
-│   │   ├── __init__. py
+│   │   ├── __init__.py
 │   │   ├── node.py
 │   │   └── tree.py
 │   ├── hash/
@@ -38,7 +38,7 @@ bptree-hash-index/
     
     # Criar figura
     fig, ax = plt.subplots(figsize=(8, 10))
-    ax. axis('off')
+    ax.axis('off')
     
     # Adicionar texto com fonte monoespaçada
     ax.text(0.05, 0.95, estrutura, 
@@ -52,7 +52,7 @@ bptree-hash-index/
               fontsize=14, fontweight='bold', pad=10)
     
     # Salvar
-    output_dir = os.path.join(os.path. dirname(__file__), '..', 'figuras')
+    output_dir = os.path.join(os.path.dirname(__file__), '..', 'figuras')
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, 'estrutura_projeto.png')
     
