@@ -128,3 +128,5 @@ artigo/*.xml
 artigo/figuras/*png
 artigo/*.ilg
 artigo/*.ind
+artigo/figuras/*.png
+artigo/figuras/*.tex
