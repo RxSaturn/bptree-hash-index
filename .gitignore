@@ -122,3 +122,7 @@ artigo/*.bbl
 artigo/*.blg
 artigo/*.fdb_latexmk
 artigo/*.fls
+artigo/*.bcf
+artigo/*.idx
+artigo/*.xml
+artigo/figuras/*png
