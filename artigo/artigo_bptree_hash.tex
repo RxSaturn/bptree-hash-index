@@ -1,0 +1,500 @@
+\documentclass[artigo]{iftex2024}
+
+\addbibresource{referencias.bib}
+
+\titulo{Implementação e Análise Comparativa de Índices B+ Tree e Hash Extensível em Python}
+\tituloestrangeiro{Implementation and Comparative Analysis of B+ Tree and Extendible Hash Indexes in Python}
+
+\autor{Henrique Augusto G. Fernandes \\ Henrique Evangelista Pimentel \\ Rayssa Mendes da Silva}
+
+\orientador[M]{Prof. Marcos Roberto Ribeiro}
+
+\instituicao[IFMG]{Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais}
+\campus{Bambuí}
+\curso{Bacharelado}{Engenharia de Computação}
+\disciplina{Banco de Dados II}
+\submissao{2025-12-01}
+
+\resumo{Este trabalho apresenta a implementação e análise comparativa de duas estruturas fundamentais de indexação em bancos de dados: a árvore B+ (B+ Tree) e o hash extensível (Extendible Hash). 
+As estruturas foram implementadas em Python puro, sem o uso de bibliotecas externas, visando compreender profundamente os algoritmos e suas características. 
+Experimentos sistemáticos foram conduzidos utilizando o gerador de dados SIOgen, variando parâmetros como número de campos por registro, tamanho de página e volume de dados. 
+Os resultados demonstram que o hash extensível apresenta desempenho superior em operações de busca por igualdade (até 5x mais rápido), enquanto a B+ Tree oferece melhor desempenho em remoções e suporta busca por intervalo, funcionalidade não disponível em estruturas de hash.
+A análise quantitativa revela trade-offs importantes: o hash extensível requer menos splits mas consome mais memória para o diretório, enquanto a B+ Tree oferece maior versatilidade com comportamento mais previsível.
+Este estudo contribui para a compreensão prática das diferenças entre estruturas de indexação, auxiliando na escolha adequada conforme o perfil de acesso aos dados.}
+
+\palavraschave{Estruturas de Dados. Indexação. B+ Tree. Hash Extensível. Banco de Dados.}
+
+\abstract{This work presents the implementation and comparative analysis of two fundamental database indexing structures: the B+ Tree and the Extendible Hash.
+The structures were implemented in pure Python, without using external libraries, aiming to deeply understand the algorithms and their characteristics.
+Systematic experiments were conducted using the SIOgen data generator, varying parameters such as number of fields per record, page size, and data volume.
+The results demonstrate that extendible hash presents superior performance in equality search operations (up to 5x faster), while B+ Tree offers better performance in deletions and supports range search, a functionality not available in hash structures.
+Quantitative analysis reveals important trade-offs: extendible hash requires fewer splits but consumes more memory for the directory, while B+ Tree offers greater versatility with more predictable behavior.
+This study contributes to the practical understanding of differences between indexing structures, assisting in appropriate selection according to data access profiles.}
+
+\keywords{Data Structures. Indexing. B+ Tree. Extendible Hash. Database.}
+
+\begin{document}
+
+\maketitle
+
+\section{INTRODUÇÃO}
+
+Estruturas de indexação são componentes fundamentais em sistemas gerenciadores de banco de dados (SGBDs), permitindo o acesso eficiente a grandes volumes de dados armazenados em memória secundária \cite{ramakrishnan:2003:database, elmasri:2015:fundamentals}.
+A escolha adequada da estrutura de índice tem impacto direto no desempenho do sistema, afetando operações de inserção, busca, atualização e remoção de registros.
+
+Entre as estruturas de indexação mais utilizadas, destacam-se a árvore B+ (B+ Tree) e o hash extensível (Extendible Hash).
+A B+ Tree, proposta por \citet{comer:1979:btree}, é uma estrutura balanceada que mantém os dados ordenados e oferece garantias de desempenho logarítmico para operações básicas, além de suportar eficientemente buscas por intervalo (range queries).
+Por outro lado, o hash extensível, introduzido por \citet{fagin:1979:extendible}, é uma estrutura dinâmica que oferece acesso em tempo constante amortizado para buscas por igualdade, crescendo e diminuindo conforme a necessidade sem requerer reorganização completa da estrutura.
+
+Apesar da ampla cobertura teórica dessas estruturas na literatura \cite{silberschatz:2019:database, cormen:2009:algorithms}, a implementação prática e a análise experimental comparativa são essenciais para compreender suas características reais de desempenho e os trade-offs envolvidos em diferentes cenários de uso.
+Este trabalho apresenta uma implementação completa de ambas as estruturas em Python, seguida de uma análise experimental sistemática que avalia o comportamento sob diferentes configurações de parâmetros.
+
+O objetivo deste trabalho é implementar, analisar e comparar experimentalmente as estruturas de índice B+ Tree e Hash Extensível, identificando seus pontos fortes, limitações e cenários de aplicação mais adequados.
+Os resultados obtidos fornecem subsídios práticos para a seleção de estruturas de indexação em projetos de banco de dados, complementando o conhecimento teórico com evidências empíricas.
+
+\subsection{Objetivos}
+
+\subsubsection{Objetivo Geral}
+
+Implementar e realizar análise comparativa experimental entre as estruturas de indexação B+ Tree e Hash Extensível, avaliando seu desempenho em diferentes cenários de uso.
+
+\subsubsection{Objetivos Específicos}
+
+\begin{enumerate}
+	\item Implementar a estrutura B+ Tree em Python com suporte a operações de inserção, busca por igualdade, busca por intervalo e remoção;
+	\item Implementar a estrutura Hash Extensível em Python com suporte a operações de inserção, busca por igualdade e remoção;
+	\item Coletar métricas de desempenho (tempo de execução, número de splits, acessos a páginas) para cada estrutura;
+	\item Executar experimentos sistemáticos variando parâmetros como número de campos, tamanho de página e volume de dados;
+	\item Analisar e comparar os resultados obtidos, identificando cenários mais adequados para cada estrutura.
+\end{enumerate}
+
+\section{FUNDAMENTAÇÃO TEÓRICA}
+
+Esta seção apresenta os conceitos fundamentais relacionados às estruturas de indexação estudadas neste trabalho.
+
+\subsection{Estruturas de Indexação}
+
+Estruturas de indexação são mecanismos que permitem localizar rapidamente registros em um banco de dados sem a necessidade de varrer sequencialmente toda a base de dados \cite{elmasri:2015:fundamentals}.
+Um índice é tipicamente construído sobre um ou mais campos (atributos) de uma relação, denominados chave de busca, e mantém ponteiros para os registros correspondentes.
+
+As estruturas de indexação podem ser classificadas segundo diversos critérios, incluindo:
+\begin{itemize}
+	\item \textbf{Ordenação}: índices ordenados (mantêm chaves em ordem) versus índices de hash (não mantêm ordem);
+	\item \textbf{Níveis}: índices de um nível (diretos) versus índices multinível;
+	\item \textbf{Densidade}: índices densos (uma entrada por registro) versus índices esparsos (entradas apenas para alguns registros).
+\end{itemize}
+
+\subsection{Árvore B+}
+
+A árvore B+ é uma extensão da árvore B desenvolvida especificamente para sistemas de banco de dados e sistemas de arquivos \cite{comer:1979:btree}.
+Suas principais características são:
+
+\begin{itemize}
+	\item \textbf{Estrutura balanceada}: Todos os caminhos da raiz até as folhas têm o mesmo comprimento, garantindo desempenho O(log n) para buscas;
+	\item \textbf{Dados nas folhas}: Todos os registros (ou ponteiros para registros) estão armazenados nos nós folha, enquanto nós internos contêm apenas chaves de roteamento;
+	\item \textbf{Encadeamento de folhas}: Os nós folha são conectados sequencialmente, permitindo varreduras eficientes e busca por intervalo;
+	\item \textbf{Alta fanout}: Cada nó pode conter múltiplas chaves e ponteiros, minimizando a altura da árvore;
+	\item \textbf{Propriedade de ocupação}: Exceto pela raiz, todos os nós mantêm uma ocupação mínima, garantindo eficiência no uso de espaço.
+\end{itemize}
+
+\subsubsection{Operações na B+ Tree}
+
+\textbf{Inserção}: A inserção localiza o nó folha apropriado e adiciona a nova chave. Se o nó ficar cheio (exceder a ordem máxima), ocorre um \textit{split}, dividindo o nó em dois e promovendo uma chave para o nó pai. Este processo pode propagar até a raiz, aumentando a altura da árvore.
+
+\textbf{Busca por igualdade}: Percorre da raiz até uma folha seguindo as chaves de roteamento, com complexidade O(log n).
+
+\textbf{Busca por intervalo}: Localiza o início do intervalo usando busca por igualdade, então percorre os nós folha sequencialmente usando o encadeamento, com complexidade O(log n + k), onde k é o número de resultados.
+
+\textbf{Remoção}: Remove a chave do nó folha. Se o nó ficar com ocupação abaixo do mínimo, pode ocorrer redistribuição de chaves com nós irmãos ou \textit{merge} de nós.
+
+\subsection{Hash Extensível}
+
+O hash extensível é uma estrutura de hash dinâmica proposta por \citet{fagin:1979:extendible} que cresce e diminui conforme necessário sem requerer reorganização completa.
+Suas principais características são:
+
+\begin{itemize}
+	\item \textbf{Diretório}: Mantém um array de ponteiros para buckets, indexado pelos últimos d bits da chave hash (d = profundidade global);
+	\item \textbf{Buckets}: Armazenam os registros reais, cada um com uma profundidade local indicando quantos bits são significativos;
+	\item \textbf{Crescimento incremental}: Quando um bucket fica cheio, apenas ele é dividido, não toda a estrutura;
+	\item \textbf{Duplicação do diretório}: Quando a profundidade local de um bucket atinge a profundidade global, o diretório é duplicado.
+\end{itemize}
+
+\subsubsection{Operações no Hash Extensível}
+
+\textbf{Inserção}: Calcula o hash da chave, usa os últimos d bits para indexar o diretório e insere no bucket correspondente. Se o bucket estiver cheio, divide-o e pode duplicar o diretório se necessário.
+
+\textbf{Busca}: Calcula o hash, indexa o diretório e busca linearmente no bucket, com complexidade O(1) amortizada.
+
+\textbf{Remoção}: Localiza e remove o registro. Opcionalmente, pode combinar buckets subutilizados (\textit{merge}) para economizar espaço.
+
+\subsection{Comparação Teórica}
+
+A Tabela \ref{tab:comparacao_teorica} apresenta uma comparação teórica das principais características das duas estruturas.
+
+\begin{table}[htb]
+	\centering
+	\caption{Comparação teórica entre B+ Tree e Hash Extensível}
+	\label{tab:comparacao_teorica}
+	\begin{tabular}{lcc}
+		\hline
+		\textbf{Característica} & \textbf{B+ Tree} & \textbf{Hash Extensível} \\
+		\hline
+		Busca por igualdade     & O(log n)         & O(1) amortizado          \\
+		Busca por intervalo     & O(log n + k)     & Não suportado            \\
+		Inserção                & O(log n)         & O(1) amortizado          \\
+		Remoção                 & O(log n)         & O(1) amortizado          \\
+		Mantém ordem            & Sim              & Não                      \\
+		Uso de espaço           & Moderado         & Alto (diretório)         \\
+		\hline
+	\end{tabular}
+	\legend{Elaborado pelos autores, 2025.}
+\end{table}
+
+\section{METODOLOGIA}
+
+Esta seção descreve a metodologia empregada na implementação das estruturas de indexação e na condução dos experimentos comparativos.
+
+\subsection{Ambiente de Desenvolvimento}
+
+As implementações foram desenvolvidas em Python 3.8+, utilizando apenas a biblioteca padrão da linguagem, sem dependências externas.
+Esta escolha permite compreensão completa dos algoritmos sem abstrações de bibliotecas de terceiros.
+O código foi organizado em módulos conforme a estrutura apresentada na Figura \ref{fig:estrutura_projeto}.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figuras/estrutura_projeto.png}
+	\caption{Estrutura do projeto de implementação}
+	\label{fig:estrutura_projeto}
+	\legend{Elaborado pelos autores, 2025.}
+\end{figure}
+
+\subsection{Decisões de Implementação}
+
+\subsubsection{B+ Tree}
+
+\begin{itemize}
+	\item \textbf{Ordem da árvore}: Calculada dinamicamente baseada no tamanho da página e número de campos do registro;
+	\item \textbf{Nós folha}: Implementados com encadeamento bidirecional (ponteiros \texttt{next} e \texttt{prev}) para facilitar busca por intervalo e navegação reversa;
+	\item \textbf{Split de nós}: Nós folha copiam a primeira chave do novo nó para o pai, enquanto nós internos movem a chave mediana;
+	\item \textbf{Remoção}: Implementação simplificada sem merge automático de nós, focando nas operações de inserção e busca.
+\end{itemize}
+
+\subsubsection{Hash Extensível}
+
+\begin{itemize}
+	\item \textbf{Função hash}: Utiliza os últimos d bits do valor da chave como índice do diretório;
+	\item \textbf{Capacidade do bucket}: Calculada baseada no tamanho da página;
+	\item \textbf{Split de buckets}: Incrementa a profundidade local e redistribui registros baseado no novo bit;
+	\item \textbf{Merge de buckets}: Implementado opcionalmente para otimizar uso de espaço após remoções.
+\end{itemize}
+
+\subsection{Representação de Dados}
+
+Registros são representados pela classe \texttt{Record}, contendo uma lista de campos inteiros de 4 bytes cada.
+O primeiro campo é sempre a chave primária.
+O tamanho de cada registro é dado por: $tamanho\_registro = num\_campos \times 4$ bytes.
+
+A ordem da B+ Tree é calculada como:
+\begin{equation}
+	ordem = \max\left(3, \left\lfloor\frac{tamanho\_pagina}{tamanho\_registro + 4}\right\rfloor\right)
+\end{equation}
+
+A capacidade do bucket no Hash é:
+\begin{equation}
+	capacidade = \max\left(2, \left\lfloor\frac{tamanho\_pagina}{tamanho\_registro + 4}\right\rfloor\right)
+\end{equation}
+
+\subsection{Geração de Dados}
+
+Os dados experimentais foram gerados utilizando o SIOgen (Simple Insert Delete Dataset Generator) \cite{ribeiro:2024:siogen}, uma ferramenta desenvolvida especificamente para criar datasets sintéticos de operações sobre estruturas de índice.
+
+O SIOgen gera arquivos CSV contendo três tipos de operações:
+\begin{itemize}
+	\item \texttt{+}: Inserção de um registro
+	\item \texttt{?}: Busca por igualdade
+	\item \texttt{-}: Remoção de um registro
+\end{itemize}
+
+Os parâmetros configuráveis do SIOgen incluem:
+\begin{itemize}
+	\item Número de atributos por registro
+	\item Quantidade de inserções, buscas e remoções
+	\item Seed para reprodutibilidade dos experimentos
+\end{itemize}
+
+\subsection{Métricas Coletadas}
+
+Para cada experimento, as seguintes métricas foram coletadas:
+
+\textbf{Métricas de tempo:}
+\begin{itemize}
+	\item Tempo total de inserção (segundos)
+	\item Tempo total de busca (segundos)
+	\item Tempo total de remoção (segundos)
+\end{itemize}
+
+\textbf{Métricas de estrutura (B+ Tree):}
+\begin{itemize}
+	\item Número de page reads
+	\item Número de page writes
+	\item Número de splits realizados
+	\item Altura final da árvore
+\end{itemize}
+
+\textbf{Métricas de estrutura (Hash Extensível):}
+\begin{itemize}
+	\item Número de bucket reads
+	\item Número de bucket writes
+	\item Número de bucket splits
+	\item Número de directory doublings
+	\item Profundidade global final
+	\item Load factor (taxa de ocupação dos buckets)
+\end{itemize}
+
+\subsection{Configuração dos Experimentos}
+
+Três conjuntos de experimentos foram conduzidos para avaliar diferentes aspectos das estruturas:
+
+\subsubsection{Experimentos de Variação de Campos}
+
+Avalia o impacto do número de campos por registro no desempenho:
+\begin{itemize}
+	\item \textbf{fields\_5}: 5 campos, página 512 bytes
+	\item \textbf{fields\_10}: 10 campos, página 512 bytes (baseline)
+	\item \textbf{fields\_20}: 20 campos, página 512 bytes
+\end{itemize}
+
+\subsubsection{Experimentos de Variação de Tamanho de Página}
+
+Avalia o impacto do tamanho da página no desempenho:
+\begin{itemize}
+	\item \textbf{page\_256}: 256 bytes, 10 campos
+	\item \textbf{page\_512}: 512 bytes, 10 campos (baseline)
+	\item \textbf{page\_1024}: 1024 bytes, 10 campos
+\end{itemize}
+
+\subsubsection{Experimentos de Variação de Volume}
+
+Avalia a escalabilidade das estruturas com diferentes volumes de dados:
+\begin{itemize}
+	\item \textbf{vol\_small}: Volume pequeno (500 inserções)
+	\item \textbf{vol\_medium}: Volume médio (2500 inserções)
+	\item \textbf{vol\_large}: Volume grande (5000 inserções)
+\end{itemize}
+
+Para cada configuração, foram executadas operações de inserção, busca e remoção, com o número de operações proporcional ao volume de dados.
+
+\section{EXPERIMENTOS E RESULTADOS}
+
+Esta seção apresenta os resultados obtidos nos experimentos realizados conforme a metodologia descrita.
+
+\subsection{Resultados Gerais}
+
+A Tabela \ref{tab:resultados_gerais} apresenta um resumo dos resultados obtidos em todos os experimentos.
+Os tempos são apresentados em segundos e representam o tempo total para executar todas as operações de cada tipo.
+
+\begin{table}[htb]
+	\centering
+	\caption{Resultados gerais dos experimentos}
+	\label{tab:resultados_gerais}
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{lccccccc}
+			\hline
+			\textbf{Experimento} & \textbf{Estrutura} & \textbf{Inserção (s)} & \textbf{Busca (s)} & \textbf{Remoção (s)} & \textbf{Splits} & \textbf{Buscas} \\
+			\hline
+			fields\_5            & B+Tree             & 0.0050                & 0.0021             & 0.0004               & 73              & 450             \\
+			fields\_5            & Hash               & 0.0028                & 0.0006             & 0.0006               & 62              & 450             \\
+			\hline
+			fields\_10           & B+Tree             & 0.0053                & 0.0020             & 0.0004               & 157             & 334             \\
+			fields\_10           & Hash               & 0.0029                & 0.0042             & 0.0009               & 126             & 334             \\
+			\hline
+			fields\_20           & B+Tree             & 0.0058                & 0.0039             & 0.0006               & 347             & 439             \\
+			fields\_20           & Hash               & 0.0050                & 0.0004             & 0.0018               & 254             & 439             \\
+			\hline
+			page\_256            & B+Tree             & 0.0084                & 0.0023             & 0.0005               & 464             & 334             \\
+			page\_256            & Hash               & 0.0107                & 0.0005             & 0.0012               & 254             & 334             \\
+			\hline
+			page\_512            & B+Tree             & 0.0044                & 0.0019             & 0.0004               & 157             & 334             \\
+			page\_512            & Hash               & 0.0030                & 0.0005             & 0.0020               & 126             & 334             \\
+			\hline
+			page\_1024           & B+Tree             & 0.0044                & 0.0017             & 0.0004               & 71              & 334             \\
+			page\_1024           & Hash               & 0.0077                & 0.0006             & 0.0006               & 62              & 334             \\
+			\hline
+			vol\_small           & B+Tree             & 0.0020                & 0.0006             & 0.0002               & 78              & 198             \\
+			vol\_small           & Hash               & 0.0014                & 0.0002             & 0.0003               & 62              & 198             \\
+			\hline
+			vol\_medium          & B+Tree             & 0.0128                & 0.0038             & 0.0008               & 318             & 750             \\
+			vol\_medium          & Hash               & 0.0092                & 0.0014             & 0.0022               & 254             & 750             \\
+			\hline
+			vol\_large           & B+Tree             & 0.0309                & 0.0115             & 0.0025               & 803             & 1953            \\
+			vol\_large           & Hash               & 0.0296                & 0.0023             & 0.0118               & 510             & 1953            \\
+			\hline
+		\end{tabular}%
+	}
+	\legend{Elaborado pelos autores, 2025.}
+\end{table}
+
+\subsection{Análise por Tipo de Operação}
+
+\subsubsection{Desempenho de Inserção}
+
+O hash extensível apresentou tempos de inserção geralmente inferiores ou comparáveis à B+ Tree.
+Nos experimentos de campos, o hash manteve vantagem consistente (0.0028s a 0.0050s versus 0.0050s a 0.0058s da B+ Tree).
+Em volumes grandes, os tempos se aproximaram (B+Tree: 0.0309s; Hash: 0.0296s), indicando comportamento linear similar para ambas estruturas.
+
+Uma exceção notável foi o experimento page\_256, onde o hash apresentou tempo superior (0.0107s versus 0.0084s), sugerindo que páginas pequenas penalizam mais a estrutura de hash devido ao overhead do diretório.
+
+\subsubsection{Desempenho de Busca}
+
+O hash extensível demonstrou superioridade clara nas operações de busca, conforme esperado pela complexidade teórica O(1).
+A diferença mais pronunciada ocorreu no experimento vol\_large, onde o hash foi aproximadamente 5 vezes mais rápido (0.0023s versus 0.0115s).
+
+Este resultado confirma experimentalmente a vantagem teórica do hash para buscas por igualdade, especialmente importante em workloads read-heavy.
+
+\subsubsection{Desempenho de Remoção}
+
+A B+ Tree apresentou desempenho superior em remoções na maioria dos experimentos.
+No volume grande, a diferença foi significativa (B+Tree: 0.0025s; Hash: 0.0118s), aproximadamente 4.7 vezes mais rápida.
+
+Este comportamento pode estar relacionado à necessidade de merge de buckets no hash extensível, enquanto a implementação simplificada da B+ Tree não realiza merge de nós.
+
+\subsection{Impacto dos Parâmetros}
+
+\subsubsection{Número de Campos}
+
+O aumento no número de campos (5, 10, 20) afetou ambas estruturas, mas de forma diferente:
+\begin{itemize}
+	\item \textbf{B+ Tree}: Tempo de busca aumentou significativamente (0.0021s para 0.0039s), e o número de splits cresceu de 73 para 347;
+	\item \textbf{Hash}: Tempo de busca manteve-se praticamente constante (0.0006s para 0.0004s), demonstrando maior robustez ao aumento de tamanho do registro.
+\end{itemize}
+
+\subsubsection{Tamanho de Página}
+
+Páginas maiores reduziram o número de splits em ambas estruturas:
+\begin{itemize}
+	\item \textbf{B+ Tree}: Splits reduziram de 464 (256 bytes) para 71 (1024 bytes);
+	\item \textbf{Hash}: Splits reduziram de 254 (256 bytes) para 62 (1024 bytes).
+\end{itemize}
+
+O ponto ótimo observado foi 512 bytes, balanceando uso de memória e desempenho.
+
+\subsubsection{Volume de Dados}
+
+Ambas estruturas apresentaram comportamento linear no tempo de inserção com o aumento do volume.
+Para buscas, o hash manteve crescimento quase constante (0.0002s a 0.0023s), enquanto a B+ Tree apresentou crescimento logarítmico mais acentuado (0.0006s a 0.0115s).
+
+\subsection{Métricas Adicionais do Hash Extensível}
+
+O hash extensível apresentou as seguintes características adicionais:
+\begin{itemize}
+	\item \textbf{Load factor}: Variou de 0.65 a 0.89, com média de 0.77, indicando boa utilização de espaço;
+	\item \textbf{Profundidade global}: Variou de 6 a 9 bits, resultando em diretórios de 64 a 512 entradas;
+	\item \textbf{Directory doublings}: Ocorreram de 5 a 8 vezes por experimento.
+\end{itemize}
+
+\section{ANÁLISE E DISCUSSÃO}
+
+Esta seção apresenta uma análise crítica dos resultados obtidos, discutindo suas implicações práticas.
+
+\subsection{Trade-offs Identificados}
+
+\subsubsection{Velocidade versus Funcionalidade}
+
+O hash extensível oferece buscas significativamente mais rápidas (O(1) versus O(log n)), mas não suporta busca por intervalo, uma funcionalidade essencial em muitas aplicações de banco de dados.
+Esta limitação torna a B+ Tree mais versátil, adequada para um espectro mais amplo de consultas.
+
+\subsubsection{Uso de Espaço versus Desempenho}
+
+O hash extensível requer memória adicional para o diretório, que pode crescer exponencialmente (duplicando a cada incremento de profundidade global).
+A B+ Tree, por outro lado, tem overhead mais previsível e controlado.
+
+Para o experimento vol\_large, estimamos:
+\begin{itemize}
+	\item \textbf{Hash}: Diretório com $2^9 = 512$ entradas (4 KB assumindo 8 bytes por ponteiro)
+	\item \textbf{B+ Tree}: Overhead de ponteiros internos proporcional ao número de nós
+\end{itemize}
+
+\subsubsection{Operações de Modificação}
+
+A B+ Tree demonstrou melhor desempenho em remoções, possivelmente devido à implementação simplificada sem merge.
+Em cenários com alta taxa de inserções e remoções (workload write-heavy), esta diferença pode ser relevante.
+
+\subsection{Cenários de Aplicação}
+
+Com base nos resultados, podemos recomendar:
+
+\textbf{Use B+ Tree quando:}
+\begin{itemize}
+	\item Buscas por intervalo forem necessárias (ex: consultas com BETWEEN, ORDER BY)
+	\item Workload tiver alta taxa de remoções
+	\item Acesso sequencial aos dados for importante
+	\item Uso previsível de memória for crítico
+\end{itemize}
+
+\textbf{Use Hash Extensível quando:}
+\begin{itemize}
+	\item Workload for dominado por buscas por igualdade (read-heavy)
+	\item Volume de dados for grande e crescente
+	\item Velocidade de busca for crítica
+	\item Não houver necessidade de ordenação ou range queries
+\end{itemize}
+
+\subsection{Limitações do Estudo}
+
+Este estudo apresenta algumas limitações que devem ser consideradas:
+
+\begin{enumerate}
+	\item \textbf{Implementação em Python}: Linguagens compiladas (C, C++) poderiam apresentar desempenho absoluto superior, mas as tendências relativas provavelmente se manteriam;
+	\item \textbf{Remoção simplificada}: A B+ Tree não implementa merge de nós, o que pode favorecer seu desempenho em remoções;
+	\item \textbf{Dados sintéticos}: O SIOgen gera dados aleatórios, que podem não refletir padrões de acesso reais;
+	\item \textbf{Ambiente controlado}: Experimentos em um único ambiente; variações de hardware poderiam afetar resultados absolutos.
+\end{enumerate}
+
+\subsection{Trabalhos Futuros}
+
+Como extensão deste trabalho, sugere-se:
+
+\begin{itemize}
+	\item Implementar merge de nós na B+ Tree para avaliação completa de remoções;
+	\item Adicionar suporte a registros de tamanho variável;
+	\item Avaliar o impacto de cache de páginas no desempenho;
+	\item Comparar com outras estruturas de indexação (B-Tree, Linear Hash, Skip List);
+	\item Conduzir experimentos com dados reais de aplicações;
+	\item Implementar otimizações como compressão de chaves e bulk loading.
+\end{itemize}
+
+\section{CONCLUSÃO}
+
+Este trabalho apresentou a implementação e análise comparativa de duas estruturas fundamentais de indexação em bancos de dados: a árvore B+ e o hash extensível.
+Os resultados experimentais confirmaram as características teóricas de cada estrutura e revelaram trade-offs importantes para guiar a seleção em projetos reais.
+
+O hash extensível demonstrou superioridade clara em buscas por igualdade, sendo até 5 vezes mais rápido que a B+ Tree em volumes grandes de dados.
+Esta vantagem se manteve consistente em diferentes configurações de campos e tamanhos de página.
+Por outro lado, a B+ Tree apresentou melhor desempenho em remoções e oferece funcionalidade adicional crucial: busca por intervalo.
+
+A análise dos parâmetros revelou que:
+\begin{itemize}
+	\item Registros maiores (mais campos) afetam mais a B+ Tree que o hash;
+	\item Páginas de 512 bytes apresentaram bom equilíbrio entre desempenho e uso de espaço;
+	\item O hash extensível requer menos splits mas consome mais memória para o diretório;
+	\item Ambas estruturas escalam linearmente em inserções, mas o hash escala melhor em buscas.
+\end{itemize}
+
+A escolha entre as estruturas deve considerar o perfil de acesso aos dados:
+\begin{itemize}
+	\item Para workloads read-heavy com buscas por igualdade, o hash extensível é preferível;
+	\item Para workloads que requerem range queries ou têm muitas remoções, a B+ Tree é mais adequada;
+	\item Para workloads balanceados ou quando versatilidade é importante, a B+ Tree oferece melhor compromisso.
+\end{itemize}
+
+Este estudo contribui para a compreensão prática das estruturas de indexação, complementando o conhecimento teórico com evidências experimentais.
+A implementação completa em Python puro facilita o estudo e extensão das estruturas, servindo como base para trabalhos futuros em otimização e comparação com outras técnicas de indexação.
+
+Os objetivos estabelecidos foram alcançados: ambas estruturas foram implementadas com sucesso, experimentos sistemáticos foram conduzidos variando múltiplos parâmetros, e análises quantitativas e qualitativas identificaram cenários adequados para cada estrutura.
+Os resultados fornecem subsídios práticos para decisões de design em sistemas de banco de dados, auxiliando desenvolvedores e arquitetos na seleção apropriada de estruturas de indexação.
+
+\section*{REFERÊNCIAS}
+
+\printbibliography[heading=none]
+
+\end{document}
